@@ -490,6 +490,24 @@ function validateStrategyDiff(
     diff.asset !== originalVersion.asset ||
     diff.strategyId !== originalVersion.strategyId ||
     diff.strategyVersion !== originalVersion.strategyVersion ||
+    diff.score === null ||
+    typeof diff.score !== "object" ||
+    diff.thesisStrength === null ||
+    typeof diff.thesisStrength !== "object" ||
+    diff.coverage === null ||
+    typeof diff.coverage !== "object" ||
+    diff.conflict === null ||
+    typeof diff.conflict !== "object" ||
+    diff.decision === null ||
+    typeof diff.decision !== "object" ||
+    diff.risk === null ||
+    typeof diff.risk !== "object" ||
+    diff.safety === null ||
+    typeof diff.safety !== "object" ||
+    diff.regimeFit === null ||
+    typeof diff.regimeFit !== "object" ||
+    diff.invalidationRules === null ||
+    typeof diff.invalidationRules !== "object" ||
     diff.score.before !== originalVersion.directionalScore ||
     diff.thesisStrength.before !== originalVersion.thesisStrength ||
     diff.coverage.before !== originalVersion.coverage ||

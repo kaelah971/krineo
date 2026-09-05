@@ -14,6 +14,7 @@ import {
   RECEIPT_SCHEMA_VERSION,
   THESIS_RECEIPT_REJECTION_CODES,
   type InvalidationRule,
+  type InvalidationConditionValue,
   type ReceiptCandidateSummary,
   type ReceiptChallengeSummary,
   type ReceiptEvidenceSummary,
@@ -266,12 +267,21 @@ function canonicalRule(rule: InvalidationRule): InvalidationRule {
     operator: rule.condition.operator,
     value: rule.condition.value,
   } satisfies Omit<InvalidationRule["condition"], "parameters">;
-  const condition =
+  const condition: InvalidationRule["condition"] =
     rule.condition.parameters === undefined
       ? baseCondition
       : {
           ...baseCondition,
-          parameters: { ...rule.condition.parameters },
+          parameters: Object.fromEntries(
+            Object.keys(rule.condition.parameters)
+              .sort(compareLexical)
+              .map(
+                (key): [string, InvalidationConditionValue] => [
+                  key,
+                  rule.condition.parameters?.[key] as InvalidationConditionValue,
+                ],
+              ),
+          ),
         };
   const baseRule = {
     id: rule.id,
@@ -503,10 +513,12 @@ function validateInvalidationRules(
 ): ThesisReceiptRejection | null {
   const ids = new Set<string>();
   for (const rule of rules) {
-    const condition = rule.condition;
+    const condition = rule?.condition;
     const parameters = condition?.parameters;
     const conditionValue = condition?.value;
     if (
+      rule === null ||
+      typeof rule !== "object" ||
       !isNonEmptyString(rule.id) ||
       ids.has(rule.id) ||
       condition === null ||
@@ -515,7 +527,8 @@ function validateInvalidationRules(
       !isNonEmptyString(condition.operator) ||
       !isInvalidationConditionValue(conditionValue) ||
       (parameters !== undefined &&
-        (typeof parameters !== "object" ||
+        (parameters === null ||
+          typeof parameters !== "object" ||
           Object.values(parameters).some(
             (value) => !isInvalidationConditionValue(value),
           ))) ||

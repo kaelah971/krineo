@@ -6,6 +6,7 @@ import {
 import type { CandidateEvaluation, DecisionResult } from "../strategy/dm1/types";
 import type { ReasonCode, WarningCode } from "../strategy/dm1/reason-codes";
 import type {
+  InvalidationConditionValue,
   InvalidationRule,
   ThesisLifecycleState,
   ThesisVersion,
@@ -44,6 +45,16 @@ function isFiniteNumber(value: unknown): value is number {
 
 function isNullableFiniteNumber(value: unknown): value is number | null {
   return value === null || isFiniteNumber(value);
+}
+
+function isInvalidationConditionValue(value: unknown): boolean {
+  return (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    isFiniteNumber(value) ||
+    (Array.isArray(value) && value.every((item) => typeof item === "string"))
+  );
 }
 
 function sortedUniqueStrings<T extends string>(items: readonly T[]): T[] {
@@ -362,14 +373,23 @@ function validateSnapshot(
 
   const ruleIds = new Set<string>();
   for (const rule of snapshot.invalidationRules) {
+    const condition = rule?.condition;
+    const parameters = condition?.parameters;
     if (
       rule === null ||
       typeof rule !== "object" ||
       !isNonEmptyString(rule.id) ||
-      !isNonEmptyString(rule.condition.field) ||
-      !isNonEmptyString(rule.condition.operator) ||
-      (typeof rule.condition.value === "number" &&
-        !Number.isFinite(rule.condition.value))
+      condition === null ||
+      typeof condition !== "object" ||
+      !isNonEmptyString(condition.field) ||
+      !isNonEmptyString(condition.operator) ||
+      !isInvalidationConditionValue(condition.value) ||
+      (parameters !== undefined &&
+        (parameters === null ||
+          typeof parameters !== "object" ||
+          Object.values(parameters).some(
+            (value) => !isInvalidationConditionValue(value),
+          )))
     ) {
       return rejection(
         STRATEGY_DIFF_REJECTION_CODES.INVALID_INVALIDATION_RULE,
@@ -652,14 +672,43 @@ function candidateRankingDiff(
   };
 }
 
+function sameConditionValue(
+  left: InvalidationConditionValue,
+  right: InvalidationConditionValue,
+): boolean {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((value, index) => value === right[index])
+    );
+  }
+  return left === right;
+}
+
 function sameRuleState(left: InvalidationRule, right: InvalidationRule): boolean {
+  const leftParameters = left.condition.parameters ?? {};
+  const rightParameters = right.condition.parameters ?? {};
+  const leftKeys = Object.keys(leftParameters).sort(compareLexical);
+  const rightKeys = Object.keys(rightParameters).sort(compareLexical);
+
   return (
     left.id === right.id &&
     left.ruleType === right.ruleType &&
     left.effect === right.effect &&
+    left.strategyId === right.strategyId &&
+    left.strategyVersion === right.strategyVersion &&
+    left.direction === right.direction &&
     left.condition.field === right.condition.field &&
     left.condition.operator === right.condition.operator &&
-    left.condition.value === right.condition.value
+    sameConditionValue(left.condition.value, right.condition.value) &&
+    leftKeys.length === rightKeys.length &&
+    leftKeys.every(
+      (key, index) =>
+        key === rightKeys[index] &&
+        sameConditionValue(leftParameters[key], rightParameters[key]),
+    )
   );
 }
 
