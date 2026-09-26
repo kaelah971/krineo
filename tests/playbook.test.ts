@@ -6,6 +6,7 @@ import {
   evaluateRule,
   evaluateVersion,
   rejectProposal,
+  validateEvaluationContext,
   validateHistory,
 } from "../lib/playbook";
 import type {
@@ -582,6 +583,27 @@ describe("M2.1 Governed Playbook V1", () => {
         } as unknown as EvaluationContext,
       );
       expect(coerced.ok).toBe(false);
+    });
+
+    it("ABSTAIN null conflict label validates; numeric conflict is UNKNOWN", () => {
+      const ctx: EvaluationContext = {
+        ...makeEvaluationContext({ decision: "ABSTAIN", conflict: null }),
+        conflictLabel: null,
+      };
+      const validated = validateEvaluationContext(ctx);
+      expect(validated.conflictLabel).toBeNull();
+
+      const result = evaluateRule(
+        {
+          id: "r-conflict-null",
+          effect: "BLOCK",
+          conditions: [cond("conflict", "GTE", 0.8)],
+        },
+        ctx,
+      );
+      if (result.ok !== true) throw new Error("null conflict evaluation failed");
+      expect(result.evaluation.outcome).toBe("UNKNOWN");
+      expect(result.evaluation.appliedEffect).toBeNull();
     });
   });
 

@@ -642,8 +642,9 @@ export function validateEvaluationContext(ctx: unknown): EvaluationContext {
   }
   assertContextNumberOrNull(ctx["conflict"], "Context conflict");
   if (
-    typeof ctx["conflictLabel"] !== "string" ||
-    !CONFLICT_LABEL_VALUES.includes(ctx["conflictLabel"])
+    ctx["conflictLabel"] !== null &&
+    (typeof ctx["conflictLabel"] !== "string" ||
+      !CONFLICT_LABEL_VALUES.includes(ctx["conflictLabel"]))
   ) {
     fail("INVALID_CONTEXT", "Context conflictLabel is invalid.");
   }

@@ -26,4 +26,11 @@ export {
 export { InMemoryMemoryProvider } from "./provider";
 export * from "./signature";
 export * from "./similarity";
+export {
+  MEMORY_SUMMARY_V1_THRESHOLDS,
+  MEMORY_SUMMARY_V1_VERSION,
+  summarizeMemorySnapshotV1,
+  type MemorySummaryThresholds,
+  type MemorySummaryV1,
+} from "./summary";
 export * from "./ranking";

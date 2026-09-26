@@ -192,7 +192,7 @@ export interface EvaluationContext {
   readonly coverage: number | null;
   readonly coverageLabel: CoverageLabel;
   readonly conflict: number | null;
-  readonly conflictLabel: ConflictLabel;
+  readonly conflictLabel: ConflictLabel | null;
   readonly reasonCodes: readonly ReasonCode[];
   readonly memory?: MemoryDerivedCounts;
 }
