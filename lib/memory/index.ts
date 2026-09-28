@@ -34,3 +34,4 @@ export {
   type MemorySummaryV1,
 } from "./summary";
 export * from "./ranking";
+export * from "./lessons";

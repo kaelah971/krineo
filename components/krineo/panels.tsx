@@ -8,11 +8,20 @@ import {
   FileCheck2,
   GitCompareArrows,
   LockKeyhole,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   Waypoints,
 } from "lucide-react";
-import type { DemoScenario } from "@/lib/demo/scenarios";
+import { selectAutonomousCandidate } from "@/lib/strategy/dm1/selection";
+import { describeDemoRule } from "@/lib/demo/authoring";
+import type { DemoCommitResult } from "@/lib/demo/commit";
+import type { DemoRefreshResult } from "@/lib/demo/refresh";
+import type {
+  DemoPracticeState,
+  DemoScenario,
+} from "@/lib/demo/scenarios";
+import type { ThesisReceipt } from "@/lib/thesis/types";
 
 const DIMENSION_LABELS: Record<string, string> = {
   DIRECTIONAL_MOMENTUM: "Directional momentum",
@@ -27,19 +36,19 @@ function humanize(value: string): string {
 }
 
 function toneFor(value: string): "positive" | "negative" | "caution" | "info" | "unknown" | "neutral" {
-  if (["LONG", "CLEAR", "ACTIVE", "MAINTAIN", "KEEP_OPEN", "SUPPORTIVE", "STRONGLY_SUPPORTIVE", "COMPLETE"].includes(value)) {
+  if (["LONG", "CLEAR", "ACTIVE", "COMMITTED", "MAINTAIN", "KEEP_OPEN", "SUPPORTIVE", "STRONGLY_SUPPORTIVE", "COMPLETE", "TRIGGERED"].includes(value)) {
     return "positive";
   }
-  if (["SHORT", "VETO", "INVALIDATE", "CLOSED", "CLOSE", "OPPOSING", "STRONGLY_OPPOSING"].includes(value)) {
+  if (["SHORT", "VETO", "BLOCKED", "BLOCK", "INVALIDATE", "CLOSED", "CLOSE", "OPPOSING", "STRONGLY_OPPOSING"].includes(value)) {
     return "negative";
   }
-  if (["CAUTION", "WEAKEN", "ELEVATED", "DEGRADED", "NEUTRAL", "PARTIAL"].includes(value)) {
+  if (["CAUTION", "WAIT", "WEAKEN", "ELEVATED", "DEGRADED", "NEUTRAL", "PARTIAL"].includes(value)) {
     return "caution";
   }
   if (["INFO", "FIT", "ELIGIBLE"].includes(value)) {
     return "info";
   }
-  if (["UNKNOWN", "ABSTAIN", "DEGRADED"].includes(value)) {
+  if (["UNKNOWN", "ABSTAIN", "NOT_TRIGGERED"].includes(value)) {
     return "unknown";
   }
   return "neutral";
@@ -148,6 +157,134 @@ export function DecisionPanel({ scenario }: { scenario: DemoScenario }) {
   );
 }
 
+function dimensionNames(
+  dimensions: readonly string[],
+): string {
+  return dimensions.length === 0
+    ? "None"
+    : dimensions.map((dimension) => DIMENSION_LABELS[dimension] ?? humanize(dimension)).join(" · ");
+}
+
+export function DecisionContextPanel({ scenario }: { scenario: DemoScenario }) {
+  const governance = scenario.currentGovernance;
+  const preflight = governance.preflight;
+  const topCase = governance.memorySnapshot.rankedCases[0] ?? null;
+  const matchedDimensions = topCase?.similarity.components
+    .filter((component) => component.diagnostic === "MATCH")
+    .map((component) => component.dimension) ?? [];
+  const differentDimensions = topCase?.similarity.components
+    .filter((component) => ["PARTIAL_ALIGNMENT", "OPPOSING"].includes(component.diagnostic))
+    .map((component) => component.dimension) ?? [];
+  const unknownDimensions = topCase?.similarity.components
+    .filter((component) => ["TARGET_UNKNOWN", "CANDIDATE_UNKNOWN", "BOTH_UNKNOWN"].includes(component.diagnostic))
+    .map((component) => component.dimension) ?? [];
+
+  return (
+    <Panel
+      id="context"
+      eyebrow="DECISION CONTEXT"
+      title="NOW / RULES / MEMORY"
+      description="The current market judgement, approved guardrails and deterministic historical context stay visible in one decision record."
+      className="decision-context-panel"
+    >
+      <div className="context-grid">
+        <div className="context-block">
+          <div className="context-heading">
+            <span className="context-index">01</span>
+            <div>
+              <span className="section-eyebrow">NOW</span>
+              <h3>What Krineo thinks</h3>
+            </div>
+          </div>
+          <div className="context-primary">
+            <strong>{preflight.marketDecision}</strong>
+            <StatusBadge value={preflight.status} label={`Preflight · ${preflight.status}`} />
+          </div>
+          <div className="context-stat-grid">
+            <Metric label="Asset" value={scenario.asset} accent />
+            <Metric label="Score" value={formatScore(preflight.marketResult.directionalScore)} />
+            <Metric label="Coverage" value={formatPercent(preflight.marketResult.coverage)} />
+          </div>
+          <p className="context-note">
+            Market decision and rule eligibility are separate outputs. Effective direction: {preflight.effectiveDecision}.
+          </p>
+        </div>
+
+        <div className="context-block">
+          <div className="context-heading">
+            <span className="context-index">02</span>
+            <div>
+              <span className="section-eyebrow">RULES</span>
+              <h3>Active rules</h3>
+            </div>
+          </div>
+          <div className="context-primary">
+            <strong>Approved Playbook v{governance.playbookVersion.versionNumber}</strong>
+            <StatusBadge value={preflight.playbookEffect} label={`Active · ${preflight.playbookEffect}`} />
+          </div>
+          <span className="context-id">
+            {governance.playbookProvenance} · {governance.playbookVersion.id} · v{governance.playbookVersion.versionNumber}
+            {governance.playbookVersion.sourceProposalId ? ` · ${governance.playbookVersion.sourceProposalId}` : ""}
+          </span>
+          <div className="context-rule-list">
+            {preflight.playbookEvaluation.ruleEvaluations.map((evaluation) => (
+              <div className="context-rule" key={evaluation.rule.id}>
+                <div className="context-rule-topline">
+                  <strong>{evaluation.rule.id}</strong>
+                  <StatusBadge value={evaluation.outcome} label={`${evaluation.outcome} · ${evaluation.rule.effect}`} />
+                </div>
+                <span className="context-rule-summary">{describeDemoRule(evaluation.rule)}</span>
+                <span>{evaluation.diagnostics[0]?.message ?? "No rule diagnostic was emitted."}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="context-block">
+          <div className="context-heading">
+            <span className="context-index">03</span>
+            <div>
+              <span className="section-eyebrow">MEMORY</span>
+              <h3>Have we seen this before?</h3>
+            </div>
+          </div>
+          <div className="context-primary">
+            <strong>{governance.memorySummary.comparableCaseCount} comparable cases</strong>
+            <StatusBadge value="INFO" label="Deterministic memory" />
+          </div>
+          <span className="context-id">{governance.memoryProvenance} · {governance.memorySummary.summaryVersion} · {governance.memorySnapshot.snapshotId}</span>
+          <div className="context-stat-grid context-memory-stats">
+            <Metric label="Ranked" value={`${governance.memorySummary.rankedCaseCount}`} />
+            <Metric label="Comparable" value={`${governance.memorySummary.comparableCaseCount}`} />
+            <Metric label="High similarity" value={`${governance.memorySummary.highSimilarityCaseCount}`} />
+          </div>
+          {topCase ? (
+            <div className="context-case">
+              <div className="context-rule-topline">
+                <strong>Top case · {topCase.caseId}</strong>
+                <StatusBadge value="MATCH" label={formatPercent(topCase.similarity.overallSimilarity)} />
+              </div>
+              <div className="context-case-metrics">
+                <span>Coverage {formatPercent(topCase.similarity.comparisonCoverage)}</span>
+                <span>Comparable {formatPercent(topCase.similarity.comparableSimilarity)}</span>
+              </div>
+              <p><strong>Matched:</strong> {dimensionNames(matchedDimensions)}</p>
+              <p><strong>Different:</strong> {dimensionNames(differentDimensions)}</p>
+              {unknownDimensions.length > 0 ? <p><strong>Unknown:</strong> {dimensionNames(unknownDimensions)}</p> : null}
+              <div className="context-history">
+                <span>Historical outcome · {topCase.decisionCase.outcome?.status ?? "NOT RECORDED"}</span>
+                <small>Context only. It does not determine today&apos;s decision.</small>
+              </div>
+            </div>
+          ) : (
+            <div className="empty-state context-empty">Memory snapshot exists, but no historical cases were ranked.</div>
+          )}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
 function Metric({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className={`metric ${accent ? "metric-accent" : ""}`}>
@@ -196,7 +333,7 @@ export function EvidencePanel({ scenario }: { scenario: DemoScenario }) {
 }
 
 export function ComparisonPanel({ scenario }: { scenario: DemoScenario }) {
-  const candidates = scenario.receipt.candidateRanking;
+  const candidates = selectAutonomousCandidate(scenario.currentCandidates).rankedCandidates;
   return (
     <Panel
       id="comparison"
@@ -211,10 +348,10 @@ export function ComparisonPanel({ scenario }: { scenario: DemoScenario }) {
           <span>Strength</span>
           <span>Coverage</span>
         </div>
-        {candidates.map((candidate) => (
+        {candidates.map((candidate, index) => (
           <div className={`comparison-row ${candidate.selected ? "comparison-selected" : ""}`} role="row" key={candidate.asset}>
             <div className="candidate-name">
-              <span className="candidate-rank">0{candidate.rank}</span>
+              <span className="candidate-rank">0{index + 1}</span>
               <strong>{candidate.asset}</strong>
               {candidate.selected ? <span className="selected-dot">Selected</span> : null}
             </div>
@@ -228,6 +365,159 @@ export function ComparisonPanel({ scenario }: { scenario: DemoScenario }) {
         <Waypoints size={15} />
         <span>Candidate ranking is part of the receipt, not an invisible model preference.</span>
       </div>
+    </Panel>
+  );
+}
+
+export function CommitPanel({
+  scenario,
+  result,
+  error,
+  pending,
+  onCommit,
+}: {
+  scenario: DemoScenario;
+  result: DemoCommitResult | null;
+  error: string | null;
+  pending: boolean;
+  onCommit: () => void;
+}) {
+  const pendingStatus =
+    scenario.currentDecision.decision === "ABSTAIN"
+      ? "ABSTAIN"
+      : scenario.currentKillSwitch.verdict;
+  const status =
+    result === null
+      ? pendingStatus
+      : result.ok
+        ? "COMMITTED"
+        : result.reason === "ABSTAIN"
+          ? "ABSTAIN"
+          : result.reason === "KILLSWITCH_VETO"
+            ? "VETO"
+            : result.reason === "KILLSWITCH_UNKNOWN"
+              ? "UNKNOWN"
+              : "BLOCKED";
+
+  return (
+    <Panel
+      id="commit"
+      eyebrow="COMMIT GATE"
+      title={result?.ok ? "Thesis committed" : "Commit the inspected record"}
+      description="Commit is a deliberate boundary: candidate selection and KillSwitch results must clear before a receipt is written."
+      className="side-panel commit-panel"
+    >
+      <div className="commit-status">
+        <div>
+          <span className="metric-label">Selected outcome</span>
+          <strong>{result?.ok ? `${result.version.decision} · v${result.version.versionNumber}` : scenario.currentDecision.decision}</strong>
+        </div>
+        <StatusBadge value={status} />
+      </div>
+      {result === null ? (
+        <>
+          <p className="diagnostic-copy">
+            {pending
+              ? "Writing the deterministic commitment and receipt on the fixture boundary."
+              : scenario.currentDecision.decision === "ABSTAIN"
+                ? "Run the commitment check to record that uncertainty remains uncommitted."
+                : "The fixture is ready to write a deterministic Decision Receipt after this explicit action."}
+          </p>
+          <button
+            className="button button-dark commit-button"
+            type="button"
+            onClick={onCommit}
+            disabled={pending}
+            aria-busy={pending}
+          >
+            {pending
+              ? "Writing receipt…"
+              : scenario.currentDecision.decision === "ABSTAIN"
+                ? "Run commitment check"
+                : "Commit selected thesis"}
+            <Check size={15} aria-hidden="true" />
+          </button>
+          {error ? <p className="intent-error" role="alert">{error}</p> : null}
+        </>
+      ) : result.ok ? (
+        <div className="commit-result commit-success" role="status" aria-live="polite">
+          <strong>Receipt written</strong>
+          <span>{result.receipt.id} · canonical hash recorded below.</span>
+        </div>
+      ) : (
+        <div className="commit-result commit-blocked" role="alert">
+          <strong>Not committed</strong>
+          <span>{result.message}</span>
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+export function RefreshPanel({
+  result,
+  previousReceipt,
+  error,
+  pending,
+  canRefresh,
+  onRefresh,
+}: {
+  result: DemoRefreshResult | null;
+  previousReceipt: ThesisReceipt | null;
+  error: string | null;
+  pending: boolean;
+  canRefresh: boolean;
+  onRefresh: () => void;
+}) {
+  return (
+    <Panel
+      id="refresh"
+      eyebrow="REFRESH / HISTORY"
+      title={result?.ok ? "Version history extended" : "Refresh the evidence"}
+      description="Append a new snapshot without rewriting the committed version, then evaluate its precommitted consequence."
+      className="side-panel refresh-panel"
+    >
+      {result === null ? (
+        canRefresh ? (
+          <>
+            <p className="diagnostic-copy">The committed v1 is preserved. Refresh the deterministic fixture to append v2 and run the strategy diff.</p>
+            <button
+              className="button button-dark refresh-button"
+              type="button"
+              onClick={onRefresh}
+              disabled={pending}
+              aria-busy={pending}
+            >
+              {pending ? "Appending v2…" : "Refresh evidence"}
+              <RefreshCw size={15} aria-hidden="true" />
+            </button>
+            {error ? <p className="intent-error" role="alert">{error}</p> : null}
+          </>
+        ) : (
+          <div className="empty-state refresh-empty" role="status">
+            <CircleHelp size={18} aria-hidden="true" />
+            <span>Commit v1 before refreshing the evidence history.</span>
+          </div>
+        )
+      ) : result.ok ? (
+        <div className="refresh-result" role="status" aria-live="polite">
+          <div className="refresh-version">
+            <span className="metric-label">Append-only history</span>
+            <strong>v{result.previousVersion.versionNumber} → v{result.version.versionNumber}</strong>
+          </div>
+          <div className="refresh-outcome">
+            <StatusBadge value={result.invalidation?.outcome ?? "MAINTAIN"} />
+            <span>{result.invalidation?.triggeredRules.length ? "Precommitted rule triggered." : "Precommitted rules maintained the thesis."}</span>
+          </div>
+          <span className="refresh-receipt">Latest: {result.receipt.id} · v2 receipt available for inspection.</span>
+          <span className="refresh-history-receipt">Historical v1 preserved: {previousReceipt?.id ?? result.previousVersion.id}</span>
+        </div>
+      ) : (
+        <div className="commit-result commit-blocked" role="alert">
+          <strong>Refresh rejected</strong>
+          <span>{result.message}</span>
+        </div>
+      )}
     </Panel>
   );
 }
@@ -265,14 +555,20 @@ export function KillSwitchPanel({ scenario }: { scenario: DemoScenario }) {
   );
 }
 
-export function DiffPanel({ scenario }: { scenario: DemoScenario }) {
+export function DiffPanel({
+  scenario,
+  practice,
+}: {
+  scenario: DemoScenario;
+  practice: DemoPracticeState | null;
+}) {
   const diff = scenario.strategyDiff;
   if (diff === null) {
     return (
       <Panel
         id="diff"
-        eyebrow="STRATEGY DIFF"
-        title="No directional diff"
+        eyebrow="CHANGE / STRATEGY DIFF"
+        title="What changed"
         description="The ABSTAIN record has no directional thesis to invalidate or compare across versions."
         className="diff-panel"
       >
@@ -285,8 +581,8 @@ export function DiffPanel({ scenario }: { scenario: DemoScenario }) {
   return (
     <Panel
       id="diff"
-      eyebrow="VERSION REVIEW"
-      title={`Strategy Diff · v${diff.version.before} → v${diff.version.after}`}
+      eyebrow="CHANGE / STRATEGY DIFF"
+      title={`What changed · v${diff.version.before} → v${diff.version.after}`}
       description="A compact explanation of what changed, what it means, and which precommitted rule evaluated it."
       className="diff-panel"
     >
@@ -314,12 +610,20 @@ export function DiffPanel({ scenario }: { scenario: DemoScenario }) {
           </div>
         ))}
       </div>
-      {scenario.invalidation ? <InvalidationChain scenario={scenario} /> : null}
+      {scenario.invalidation ? (
+        <InvalidationChain scenario={scenario} practice={practice} />
+      ) : null}
     </Panel>
   );
 }
 
-function InvalidationChain({ scenario }: { scenario: DemoScenario }) {
+function InvalidationChain({
+  scenario,
+  practice,
+}: {
+  scenario: DemoScenario;
+  practice: DemoPracticeState | null;
+}) {
   const invalidation = scenario.invalidation;
   if (invalidation === null) return null;
   return (
@@ -333,21 +637,40 @@ function InvalidationChain({ scenario }: { scenario: DemoScenario }) {
         <div className="chain-connector" />
         <div className={`chain-node ${invalidation.triggeredRules.length > 0 ? "chain-node-triggered" : "chain-node-complete"}`}><CircleAlert size={13} /><span>{invalidation.triggeredRules.length > 0 ? "Rule triggered" : "Rules clear"}</span></div>
         <div className="chain-connector" />
-        <div className="chain-node chain-node-final"><Waypoints size={13} /><span>Practice {scenario.practice.action?.action === "CLOSE" ? "closed" : "kept open"}</span></div>
+        <div className="chain-node chain-node-final"><Waypoints size={13} /><span>{practice === null ? "Practice pending commit" : `Practice ${practice.action?.action === "CLOSE" ? "closed" : "kept open"}`}</span></div>
       </div>
       <p className="diagnostic-copy">{invalidation.triggeredRules.length > 0 ? `${invalidation.triggeredRules[0].ruleType.replaceAll("_", " ")} fired from the precommitted rule set.` : "No invalidation rule was triggered by this refresh."}</p>
     </div>
   );
 }
 
-export function ReceiptPanel({ scenario }: { scenario: DemoScenario }) {
-  const receipt = scenario.receipt;
+export function ReceiptPanel({ receipt }: { receipt: ThesisReceipt | null }) {
+  if (receipt === null) {
+    return (
+      <Panel
+        id="receipt"
+        eyebrow="APPEND-ONLY PROOF"
+        title="Decision Receipt pending"
+        description="The canonical record appears only after an explicit commitment clears candidate selection and KillSwitch review."
+        className="receipt-panel"
+      >
+        <div className="receipt-pending" role="status" aria-live="polite">
+          <CircleHelp size={20} aria-hidden="true" />
+          <div>
+            <strong>Commit the inspected thesis first</strong>
+            <span>No receipt is written while the workspace is still in review.</span>
+          </div>
+        </div>
+      </Panel>
+    );
+  }
+
   return (
     <Panel
       id="receipt"
       eyebrow="APPEND-ONLY PROOF"
-      title="Thesis Receipt"
-      description="The current version is a compact, canonical record of the evidence, policy result, alternatives and challenge."
+      title="Decision Receipt"
+      description="The committed version is a compact, canonical record of the evidence, policy result, alternatives and challenge."
       className="receipt-panel"
     >
       <div className="receipt-topline">
@@ -373,10 +696,13 @@ export function ReceiptPanel({ scenario }: { scenario: DemoScenario }) {
   );
 }
 
-export function PracticePanel({ scenario }: { scenario: DemoScenario }) {
-  const practice = scenario.practice;
-  const position = practice.position;
-  const action = practice.action;
+export function PracticePanel({
+  practice,
+}: {
+  practice: DemoPracticeState | null;
+}) {
+  const position = practice?.position ?? null;
+  const action = practice?.action ?? null;
   return (
     <Panel
       id="practice"
@@ -387,7 +713,7 @@ export function PracticePanel({ scenario }: { scenario: DemoScenario }) {
     >
       <div className="practice-policy"><span>$10,000 simulated balance</span><span>$1,000 default notional</span><span>policy 1.0.0</span></div>
       {position === null ? (
-        <div className="empty-state practice-empty"><CircleHelp size={20} /><div><strong>No position opened</strong><span>ABSTAIN has no directional practice position.</span></div></div>
+        <div className="empty-state practice-empty"><CircleHelp size={20} /><div><strong>No position opened</strong><span>{practice === null ? "Commit an eligible directional thesis to open a simulated position." : "ABSTAIN has no directional practice position."}</span></div></div>
       ) : (
         <div className="practice-position">
           <div className="position-header">
@@ -396,9 +722,9 @@ export function PracticePanel({ scenario }: { scenario: DemoScenario }) {
           </div>
           <div className="position-metrics">
             <Metric label="Entry" value={`$${position.entryPrice.toFixed(2)}`} />
-            <Metric label="Current" value={`$${practice.currentPrice.toFixed(2)}`} />
-            <Metric label="P&L" value={formatPnl(practice.pnl?.pnlUsd ?? position.realizedPnlUsd ?? null)} accent />
-            <Metric label="Return" value={practice.pnl ? `${practice.pnl.pnlPercent >= 0 ? "+" : ""}${practice.pnl.pnlPercent.toFixed(2)}%` : `${position.realizedPnlPercent && position.realizedPnlPercent >= 0 ? "+" : ""}${position.realizedPnlPercent?.toFixed(2) ?? "—"}%`} />
+            <Metric label="Current" value={practice === null ? "—" : `$${practice.currentPrice.toFixed(2)}`} />
+            <Metric label="P&L" value={formatPnl(practice?.pnl?.pnlUsd ?? position.realizedPnlUsd ?? null)} accent />
+            <Metric label="Return" value={practice?.pnl ? `${practice.pnl.pnlPercent >= 0 ? "+" : ""}${practice.pnl.pnlPercent.toFixed(2)}%` : `${position.realizedPnlPercent && position.realizedPnlPercent >= 0 ? "+" : ""}${position.realizedPnlPercent?.toFixed(2) ?? "—"}%`} />
           </div>
           <div className={`practice-action practice-action-${action?.action.toLowerCase() ?? "none"}`}>
             {action?.action === "CLOSE" ? <CircleAlert size={15} /> : <Check size={15} />}

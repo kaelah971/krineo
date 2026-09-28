@@ -24,6 +24,7 @@ import type {
   ThesisVersion,
 } from "../thesis/types";
 import { evaluateCandidate } from "../strategy/dm1/decision";
+import { selectAutonomousCandidate } from "../strategy/dm1/selection";
 import type {
   CandidateEvaluation,
   DM1EvidenceSnapshot,
@@ -53,8 +54,13 @@ import type {
   PracticePosition,
   PracticePositionAction,
 } from "../practice/types";
+import {
+  buildDemoGovernance,
+  type DemoGovernanceState,
+} from "./governance";
 
 export type DemoScenarioId = "directional" | "abstain" | "changed";
+export type DemoScenarioPhase = "original" | "current";
 
 export interface DemoPracticeState {
   readonly ledger: PracticeLedger;
@@ -76,16 +82,25 @@ export interface DemoScenario {
   readonly currentVersion: ThesisVersion;
   readonly originalDecision: CandidateEvaluation;
   readonly currentDecision: CandidateEvaluation;
+  readonly originalCandidates: readonly CandidateEvaluation[];
+  readonly currentCandidates: readonly CandidateEvaluation[];
+  readonly originalEvidenceSnapshot: DM1EvidenceSnapshot;
+  readonly currentEvidenceSnapshot: DM1EvidenceSnapshot;
+  readonly originalGovernance: DemoGovernanceState;
+  readonly currentGovernance: DemoGovernanceState;
   readonly originalEvidence: readonly EvidenceItem[];
   readonly currentEvidence: readonly EvidenceItem[];
   readonly originalKillSwitch: KillSwitchAggregateResult;
   readonly currentKillSwitch: KillSwitchAggregateResult;
+  readonly originalKillSwitchValidation: KillSwitchValidationResult;
   readonly currentKillSwitchValidation: KillSwitchValidationResult;
   readonly receipt: ThesisReceipt;
   readonly strategyDiff: StrategyDiff | null;
   readonly invalidation: InvalidationEvaluation | null;
   readonly invalidationRules: readonly InvalidationRule[];
-  readonly practice: DemoPracticeState;
+  readonly originalInvalidationRules: readonly InvalidationRule[];
+  readonly originalPractice: DemoPracticeState | null;
+  readonly practice: DemoPracticeState | null;
 }
 
 const DIMENSIONS: readonly DirectionalEvidenceDimension[] = [
@@ -217,27 +232,18 @@ function candidateSet(
   alternateSnapshot: DM1EvidenceSnapshot,
 ): CandidateEvaluation[] {
   return [
-    {
-      ...evaluateCandidate({ asset, evidence: targetSnapshot }),
-      selected: true,
-    },
-    {
-      ...evaluateCandidate({ asset: "ETH", evidence: alternateSnapshot }),
-      selected: false,
-    },
-    {
-      ...evaluateCandidate({
-        asset: "BTC",
-        evidence: makeSnapshot({
-          DIRECTIONAL_MOMENTUM: "NEUTRAL",
-          TECHNICAL_CONFLUENCE: "NEUTRAL",
-          RELATIVE_OPPORTUNITY: "NEUTRAL",
-          MARKET_ALIGNMENT: "NEUTRAL",
-          SENTIMENT_DERIVATIVES: "UNKNOWN",
-        }),
+    evaluateCandidate({ asset, evidence: targetSnapshot }),
+    evaluateCandidate({ asset: "ETH", evidence: alternateSnapshot }),
+    evaluateCandidate({
+      asset: "BTC",
+      evidence: makeSnapshot({
+        DIRECTIONAL_MOMENTUM: "NEUTRAL",
+        TECHNICAL_CONFLUENCE: "NEUTRAL",
+        RELATIVE_OPPORTUNITY: "NEUTRAL",
+        MARKET_ALIGNMENT: "NEUTRAL",
+        SENTIMENT_DERIVATIVES: "UNKNOWN",
       }),
-      selected: false,
-    },
+    }),
   ];
 }
 
@@ -273,7 +279,7 @@ function killSwitchFor(
   };
 }
 
-function makePractice(
+export function buildDemoPractice(
   scenarioId: DemoScenarioId,
   thesis: Thesis,
   version: ThesisVersion,
@@ -390,20 +396,38 @@ function buildScenario(inputs: ScenarioInputs): DemoScenario {
     inputs.currentSnapshot,
     inputs.alternateSnapshot,
   );
-  const originalDecision = originalCandidates[0];
-  const currentDecision = currentCandidates[0];
+  const originalSelection = selectAutonomousCandidate(originalCandidates);
+  const currentSelection = selectAutonomousCandidate(currentCandidates);
+  const originalDecision = originalSelection.selected ?? originalCandidates[0];
+  const currentDecision = currentSelection.selected ?? currentCandidates[0];
+  const selectedOriginalCandidates = originalSelection.candidates;
+  const selectedCurrentCandidates = currentSelection.candidates;
   const originalKillSwitch = killSwitchFor(
     originalDecision,
     inputs.originalSnapshot,
     originalEvidence,
-    originalCandidates,
+    selectedOriginalCandidates,
   );
   const currentKillSwitch = killSwitchFor(
     currentDecision,
     inputs.currentSnapshot,
     currentEvidence,
-    currentCandidates,
+    selectedCurrentCandidates,
   );
+  const originalGovernance = buildDemoGovernance({
+    scenarioId: inputs.id,
+    asset,
+    targetSnapshotId: inputs.originalSnapshotId,
+    evidence: inputs.originalSnapshot,
+    marketResult: originalDecision,
+  });
+  const currentGovernance = buildDemoGovernance({
+    scenarioId: inputs.id,
+    asset,
+    targetSnapshotId: inputs.currentSnapshotId,
+    evidence: inputs.currentSnapshot,
+    marketResult: currentDecision,
+  });
   const originalRules =
     originalDecision.decision === "ABSTAIN"
       ? []
@@ -458,14 +482,14 @@ function buildScenario(inputs: ScenarioInputs): DemoScenario {
               version: originalVersion,
               normalizerVersion: "fixture-normalizer-1",
               evidenceItems: originalEvidence,
-              candidateEvaluations: originalCandidates,
+              candidateEvaluations: selectedOriginalCandidates,
               invalidationRules: originalRules,
             },
             after: {
               version: currentVersion,
               normalizerVersion: "fixture-normalizer-1",
               evidenceItems: currentEvidence,
-              candidateEvaluations: currentCandidates,
+              candidateEvaluations: selectedCurrentCandidates,
               invalidationRules: currentRules,
             },
           }),
@@ -493,7 +517,7 @@ function buildScenario(inputs: ScenarioInputs): DemoScenario {
       receiptId: `${thesisId}-receipt-v${currentVersion.versionNumber}`,
       normalizerVersion: "fixture-normalizer-1",
       evidenceItems: currentEvidence,
-      candidateEvaluations: currentCandidates,
+      candidateEvaluations: selectedCurrentCandidates,
       invalidationRules: currentRules,
       ...(currentDecision.decision === "ABSTAIN"
         ? {}
@@ -516,16 +540,25 @@ function buildScenario(inputs: ScenarioInputs): DemoScenario {
     currentVersion,
     originalDecision,
     currentDecision,
+    currentCandidates: selectedCurrentCandidates,
+    originalEvidenceSnapshot: inputs.originalSnapshot,
+    currentEvidenceSnapshot: inputs.currentSnapshot,
+    originalGovernance,
+    currentGovernance,
     originalEvidence,
     currentEvidence,
     originalKillSwitch: originalKillSwitch.aggregate,
     currentKillSwitch: currentKillSwitch.aggregate,
+    originalKillSwitchValidation: originalKillSwitch.validation,
     currentKillSwitchValidation: currentKillSwitch.validation,
     receipt,
     strategyDiff,
     invalidation,
     invalidationRules: currentRules,
-    practice: makePractice(inputs.id, thesis, originalVersion, invalidation),
+    originalInvalidationRules: originalRules,
+    originalCandidates: selectedOriginalCandidates,
+    originalPractice: null,
+    practice: null,
   };
 }
 
@@ -534,7 +567,7 @@ export function getDemoScenarios(): readonly DemoScenario[] {
     buildScenario({
       id: "directional",
       label: "Directional thesis",
-      eyebrow: "Review a live directional question",
+      eyebrow: "Review a baseline directional setup",
       request: "Is SOL still the clearest long opportunity in the current regime?",
       description:
         "A supportive research tape clears DM-1, survives challenge, and keeps the simulated position open.",
