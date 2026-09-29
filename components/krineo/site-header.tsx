@@ -3,10 +3,10 @@ import { Menu } from "lucide-react";
 
 export function SiteHeader({
   active,
-  showFixtureMeta = false,
+  context = "marketing",
 }: {
-  active: "home" | "workspace";
-  showFixtureMeta?: boolean;
+  active: "home" | "workspace" | "demo";
+  context?: "marketing" | "workspace" | "demo";
 }) {
   return (
     <header className="topbar">
@@ -18,16 +18,22 @@ export function SiteHeader({
       <nav className="topnav" aria-label="Primary navigation">
         <Link className={active === "home" ? "topnav-active" : undefined} href="/">Home</Link>
         <Link className={active === "workspace" ? "topnav-active" : undefined} href="/workspace">Workspace</Link>
+        <Link className={active === "demo" ? "topnav-active" : undefined} href="/demo">Demo</Link>
       </nav>
-      {showFixtureMeta ? (
+      {context === "demo" ? (
         <div className="topbar-meta">
           <span className="fixture-dot" />
           <span>DEMO FIXTURE</span>
           <span className="avatar" aria-label="Demo agent">A</span>
         </div>
-      ) : (
+      ) : context === "marketing" ? (
         <div className="topbar-actions">
           <Link className="button button-dark topbar-cta" href="/workspace">Open workspace</Link>
+        </div>
+      ) : (
+        <div className="topbar-meta topbar-local-meta">
+          <span className="fixture-dot" />
+          <span>LOCAL WORKSPACE</span>
         </div>
       )}
       <span className="mobile-menu-icon" aria-hidden="true"><Menu size={19} /></span>

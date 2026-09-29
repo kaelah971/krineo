@@ -1,6 +1,5 @@
-import { KrineoWorkspace } from "@/components/krineo/workspace";
-import { getDemoScenarios } from "@/lib/demo/scenarios";
+import { PersonalWorkspace } from "@/components/krineo/personal-workspace";
 
 export default function WorkspacePage() {
-  return <KrineoWorkspace scenarios={getDemoScenarios()} />;
+  return <PersonalWorkspace />;
 }

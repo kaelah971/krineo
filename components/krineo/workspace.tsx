@@ -371,7 +371,7 @@ export function KrineoWorkspace({ scenarios }: { scenarios: readonly DemoScenari
 
   return (
     <div className="app-shell">
-      <SiteHeader active="workspace" showFixtureMeta />
+      <SiteHeader active="demo" context="demo" />
 
       <main id="top" className="shell-content">
         <section className="workspace-hero" aria-labelledby="workspace-title">

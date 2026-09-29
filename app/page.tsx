@@ -10,7 +10,8 @@ const workflow = [
 ] as const;
 
 const surfaces = [
-  ["Workspace", "Inspect fixture-backed decisions, guardrails, receipts and change.", "/workspace", "Active"],
+  ["Workspace", "Your personal home for strategies, decisions and memory.", "/workspace", "Active"],
+  ["Golden Demo", "Explore the deterministic fixture-backed decision walkthrough.", "/demo", "Available"],
   ["Theses", "Versioned market views and their decision history.", null, "Coming next"],
   ["Receipts", "Canonical evidence records for accountable review.", null, "Coming next"],
   ["Practice", "Simulated drills from prior cases and rule changes.", null, "Coming next"],
@@ -28,7 +29,7 @@ export default function Home() {
             <p className="landing-lede">Your AI-assisted trading workflow shouldn&apos;t forget its own rules. Krineo keeps decisions, guardrails, receipts and change visible.</p>
             <div className="hero-actions">
               <Link className="button button-dark" href="/workspace">Open Workspace <ArrowRight size={15} /></Link>
-              <a className="text-link" href="#workflow">See how it works <ChevronRight size={15} /></a>
+              <Link className="text-link" href="/demo">Explore Golden Demo <ChevronRight size={15} /></Link>
             </div>
           </div>
           <div className="landing-preview" aria-label="Krineo product preview">
@@ -96,8 +97,8 @@ export default function Home() {
         </section>
 
         <section className="final-cta" aria-labelledby="final-cta-title">
-          <p className="section-eyebrow">OPEN THE GOLDEN DEMO</p>
-          <h2 id="final-cta-title">Inspect the workspace with decisions, receipts and change intact.</h2>
+          <p className="section-eyebrow">OPEN YOUR WORKSPACE</p>
+          <h2 id="final-cta-title">Make your workspace the home for accountable decisions.</h2>
           <Link className="button button-dark" href="/workspace">Open Krineo Workspace <ArrowRight size={15} /></Link>
         </section>
       </main>
