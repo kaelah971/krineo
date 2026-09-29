@@ -7,7 +7,6 @@ import {
   ChevronRight,
   CircleHelp,
   FlaskConical,
-  Menu,
   Search,
 } from "lucide-react";
 import { requestDemoCommit, requestDemoRefresh } from "@/lib/demo/client";
@@ -52,6 +51,7 @@ import {
 import { GoldenOverview } from "./golden-overview";
 import { MemoryLessonPanel } from "./memory-lesson";
 import { PlaybookAuthoringPanel } from "./playbook-authoring";
+import { SiteHeader } from "./site-header";
 
 const reviewSteps = [
   { label: "Evidence", href: "#evidence", key: "evidence" },
@@ -371,24 +371,7 @@ export function KrineoWorkspace({ scenarios }: { scenarios: readonly DemoScenari
 
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <a className="brand-lockup" href="#top" aria-label="Krineo workspace home">
-          <span className="brand-mark" aria-hidden="true"><span /><span /><span /></span>
-          <span className="brand-name">KRINEO</span>
-          <span className="brand-beta">ALPHA</span>
-        </a>
-        <nav className="topnav" aria-label="Primary navigation">
-          <a className="topnav-active" href="#top">Workspace</a>
-          <a href="#receipt">Receipts</a>
-          <a href="#practice">Practice</a>
-        </nav>
-        <div className="topbar-meta">
-          <span className="fixture-dot" />
-          <span>DEMO FIXTURE</span>
-          <span className="avatar" aria-label="Demo agent">A</span>
-        </div>
-        <span className="mobile-menu-icon" aria-hidden="true"><Menu size={19} /></span>
-      </header>
+      <SiteHeader active="workspace" showFixtureMeta />
 
       <main id="top" className="shell-content">
         <section className="workspace-hero" aria-labelledby="workspace-title">
