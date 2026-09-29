@@ -22,6 +22,8 @@ The message system therefore follows one rule:
 
 > **Build the evidence-to-decision loop first. Let every message prove or support that loop.**
 
+> **Current implementation disclosure:** Shipped Krineo can run bounded research through LIVE RYO or clearly labeled REPLAY, then apply deterministic policy and optional simulated practice. The current Golden Demo is fixture-backed. “Live,” “agent,” “persistent,” and “autonomous” must be qualified by provider availability and the current no-database/no-execution boundary.
+
 Krineo is not a brokerage, exchange, custody layer, autonomous fund or real-money trading product. Its core output is an evidence-backed market thesis, including the disciplined decision not to trade.
 
 ## Brand foundation
@@ -36,7 +38,7 @@ A market culture where decisions can be challenged without erasing history, and 
 
 ### Mission
 
-Krineo researches live market evidence, compares real alternatives, challenges provisional theses and preserves the reasoning trail behind every decision.
+Krineo can research live market evidence when RYO is available, or use clearly labeled replay evidence, compare alternatives, apply deterministic challenges and preserve the reasoning trail behind every decision.
 
 ### Brand essence
 
@@ -122,7 +124,7 @@ Krineo should help someone reach a clear decision while preserving the right to 
 
 Supporting category sentence:
 
-> **Krineo is a market-reasoning workspace that turns live evidence into inspectable, challengeable and versioned market theses.**
+> **Krineo is a market-reasoning workspace that turns live or explicitly replay-labeled evidence into inspectable, challengeable and versioned market theses.**
 
 “Market thesis” is a reasoning object here—not financial advice, an execution instruction or a promise of return.
 
@@ -204,7 +206,7 @@ Using Krineo should communicate:
 
 ### Positioning statement
 
-> **For crypto researchers and technically curious market participants who need to decide whether a thesis deserves commitment, Krineo is an accountable market-reasoning workspace that turns live evidence into a comparable, challengeable and versioned thesis. Unlike signal bots and generic AI trading assistants, Krineo preserves rejected alternatives, adversarial review, uncertainty and before/after evidence changes in a permanent Thesis Receipt.**
+> **For crypto researchers and technically curious market participants who need to decide whether a thesis deserves commitment, Krineo is an accountable market-reasoning workspace that turns available live or explicitly replay-labeled evidence into a comparable, challengeable and versioned thesis. Unlike signal bots and generic AI trading assistants, Krineo preserves rejected alternatives, deterministic review, uncertainty and before/after evidence changes in a permanent Thesis Receipt.**
 
 ## Messaging house
 
@@ -326,18 +328,18 @@ Expanded:
 2. Who it is for: people who want to inspect and defend a market thesis.
 3. What it does: researches, compares, challenges, commits and revisits.
 4. What makes it different: the decision is versioned and cannot silently rewrite itself.
-5. Why believe it: real RYO evidence, deterministic DM-1 policy, provenance, KillSwitch and Strategy Diff.
+5. Why believe it: available RYO evidence or labeled replay, deterministic DM-1 policy, provenance, KillSwitch and Strategy Diff.
 6. What to do next: find an opportunity or explore a Thesis Receipt.
 
 ## Core message system
 
 ### One-line description
 
-> **Krineo is an accountable market-reasoning workspace that turns live evidence into comparable, challengeable and versioned theses.**
+> **Krineo is an accountable market-reasoning workspace that turns available live or explicitly replay-labeled evidence into comparable, challengeable and versioned theses.**
 
 ### Brand statement
 
-> **Krineo helps market researchers make AI-assisted decisions they can inspect, challenge and defend. It gathers live evidence, compares alternatives, runs an adversarial review and preserves the reasoning state in a Thesis Receipt. When the evidence changes, Strategy Diff shows why the decision changed.**
+> **Krineo helps market researchers make AI-assisted decisions they can inspect, challenge and defend. It gathers available live evidence or labeled replay, compares alternatives, runs deterministic guardrails and preserves the reasoning state in a Thesis Receipt. When the evidence changes, Strategy Diff shows why the decision changed.**
 
 ### Value proposition
 
@@ -349,11 +351,11 @@ Expanded:
 
 ### Elevator pitch
 
-> **Krineo is a market-reasoning workspace for people who do not want an AI trading signal they cannot audit. It researches live RYO evidence, compares opportunities and `ABSTAIN`, challenges the provisional thesis with KillSwitch, then commits the decision as a versioned Thesis Receipt. When new evidence arrives, Strategy Diff shows exactly what changed and whether a precommitted invalidation rule fired.**
+> **Krineo is a market-reasoning workspace for people who do not want an AI trading signal they cannot audit. It can research live RYO evidence or use explicitly labeled replay, compare opportunities and `ABSTAIN`, challenge the provisional thesis with KillSwitch, then commit the decision as a versioned Thesis Receipt. When new evidence arrives, Strategy Diff shows exactly what changed and whether a precommitted invalidation rule fired.**
 
 ### Short pitch
 
-> **Krineo turns live market research into a thesis you can compare, challenge, commit and revisit.**
+> **Krineo turns available market research into a thesis you can compare, challenge, commit and revisit, while labeling replay and degraded provider states.**
 
 ### Full narrative
 
@@ -430,7 +432,7 @@ The first line uses General Sans bold. The second line may use the single editor
 **Proof strip**
 
 ```text
-LIVE RYO EVIDENCE · OPPORTUNITY COST · KILLSWITCH · APPEND-ONLY RECEIPTS · STRATEGY DIFF
+LIVE / REPLAY-LABELED EVIDENCE · OPPORTUNITY COST · KILLSWITCH · APPEND-ONLY RECEIPTS · STRATEGY DIFF
 ```
 
 ### Alternative hero headlines
@@ -480,7 +482,7 @@ It is recommended because it is short, repeatable and gives the Thesis Receipt a
 
 | Feature | Functional result | Practical outcome | Emotional meaning | Recommended message |
 |---|---|---|---|---|
-| RYO read-only research | Live market and token evidence is gathered from the research layer. | The thesis begins with inspectable inputs rather than unsupported prose. | The user feels grounded. | **Start with evidence, not an answer.** |
+| RYO read-only research | Available live market and token evidence is gathered from the research layer; replay is labeled and missing data stays unknown. | The thesis begins with inspectable inputs rather than unsupported prose. | The user feels grounded. | **Start with evidence, not an answer.** |
 | Evidence normalisation | Raw provider results become comparable evidence states with source and freshness. | The user can see what supports, contradicts, is stale or is unavailable. | Complexity feels organised rather than hidden. | **See what the decision is made of.** |
 | Opportunity Cost | Candidates are compared against each other and `ABSTAIN`. | A selected asset must beat realistic alternatives or no trade wins. | The user feels less trapped by the first idea. | **A choice is only meaningful beside its alternatives.** |
 | `ABSTAIN` | Policy can decline a directional outcome when evidence is weak, conflicting or incomplete. | The system avoids manufacturing a trade. | Restraint becomes a sign of intelligence. | **No clear winner is still a clear result.** |
@@ -492,7 +494,7 @@ It is recommended because it is short, repeatable and gives the Thesis Receipt a
 | Strategy Diff | Then and now are compared at evidence level. | Users can see what caused the decision to weaken or change. | The update is understandable. | **When the evidence changes, the receipt shows why.** |
 | Invalidation rules | Precommitted conditions determine weakening, closure or invalidation. | The thesis does not move the goalposts after the market moves. | The user can trust the discipline of the process. | **Decide what would change your mind before it does.** |
 | Narrative Gap | Public narrative is compared with market evidence and labelled. | Story cannot silently become directional proof. | The user can separate attention from evidence. | **The story is a signal to examine, not a reason to pretend.** |
-| Challenge Thesis | A human counterclaim becomes a researched testable claim. | Social participation improves the reasoning trail instead of adding noise. | Disagreement becomes useful. | **Challenge the claim, not the person.** |
+| Strategy Preflight | Caller-supplied normalized context is checked against an approved Playbook. | Guardrails remain inspectable and deterministic. | A decision can wait without being silently overridden. | **Rules decide before action.** |
 | Practice position | A fixed-size simulated position reflects the thesis. | Users can observe the decision without real-money execution. | Learning is separated from financial risk. | **Practice the decision. Never confuse it with proof.** |
 
 ## Product language system
@@ -506,7 +508,7 @@ Use the names consistently and capitalise them as shown:
 - **Thesis Receipt** — committed reasoning artifact.
 - **Strategy Diff** — evidence-level then/now comparison.
 - **Narrative Gap** — story versus market-evidence relationship.
-- **Challenge Thesis** — human counterclaim flow.
+- **Strategy Preflight** — shipped deterministic guardrail skill. **Challenge Thesis** — roadmap human-counterclaim flow.
 - **DM-1** — the v1 Defensible Momentum strategy.
 
 Do not create a separate brand for every evidence dimension, provider or UI state.
@@ -921,7 +923,7 @@ Use this near product demonstrations and practice-position views:
 
 1. AI can produce an answer without preserving accountability.
 2. A decision needs evidence, alternatives and an invalidation path.
-3. Krineo researches live data through RYO.
+3. Krineo can research live data through RYO; during provider degradation it preserves `UNKNOWN` or uses explicitly labeled replay.
 4. Opportunity Cost prevents the first plausible asset from winning by default.
 5. KillSwitch attacks the thesis before commitment.
 6. Thesis Receipt preserves the reasoning state.
@@ -1000,7 +1002,7 @@ Lead with the category before the cleverness. Make the first message about a dec
 The decisive communication sequence is:
 
 ```text
-LIVE EVIDENCE
+LIVE / REPLAY-LABELED EVIDENCE
 → ALTERNATIVES
 → CHALLENGE
 → DECISION

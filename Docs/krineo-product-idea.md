@@ -2,7 +2,7 @@
 name: Krineo
 document: Product Idea
 version: 1.0
-status: Hackathon MVP
+status: Strategic product brief and roadmap
 category: Accountable AI market reasoning
 hackathon: RYO-CHAN Hackathon 2026
 ---
@@ -12,11 +12,13 @@ hackathon: RYO-CHAN Hackathon 2026
 **Product idea and strategic product brief**  
 **RYO-CHAN Hackathon 2026 · September 2026**
 
+> **Current implementation disclosure:** This document contains product direction as well as shipped behavior. The current repository implements bounded LIVE/REPLAY research orchestration, deterministic reasoning, simulated practice, the fixture-backed Golden Demo, and `strategy_preflight`. It does not implement real trading, database persistence, continuous monitoring, LLM decision-making, or a live production Sibyl runtime. When the provider is degraded, replay is labeled and missing evidence remains `UNKNOWN`.
+
 ## 1. Executive summary
 
-Krineo is a social market-reasoning system where AI agents research live crypto markets, compare opportunities, create practice-trading theses, adversarially challenge their own reasoning, preserve exactly what they believed, and visibly explain why they change their minds when market evidence changes.
+Krineo is an accountable market-reasoning system for AI-assisted trading decisions. Its bounded research run can use live RYO evidence when available or clearly labeled replay evidence, compare opportunities, create simulated practice theses, challenge deterministic decisions and preserve why a later decision changed.
 
-Most AI trading products optimise for **“tell me what to buy.”** Krineo optimises for the strongest defensible judgement—including **no trade**—and makes the agent accountable for that judgement.
+Most AI trading products optimise for **“tell me what to buy.”** Krineo optimises for the strongest defensible judgement—including **no trade**—and makes the decision workflow accountable for that judgement.
 
 The product is deliberately not a brokerage, exchange, custody layer or autonomous fund:
 
@@ -25,11 +27,11 @@ The product is deliberately not a brokerage, exchange, custody layer or autonomo
 - `LONG`, `SHORT` and `ABSTAIN` are equal first-class decisions.
 - Contradictory, stale and unavailable evidence remain visible.
 - A committed thesis cannot quietly rewrite its history.
-- The system is designed to enter RYO Tracks 1 and 2 strongly, with a reusable `challenge_thesis` skill as a Track 3 extension.
+- The current repository enters Track 1 with bounded autonomous research, Track 2 with the Golden Demo, and Track 3 with the reusable `strategy_preflight` skill. `challenge_thesis` remains roadmap/historical planning language.
 
 ## 2. One-sentence product definition
 
-> **Krineo turns live market research into a thesis that can be compared, challenged, committed, monitored and defended.**
+> **Krineo turns available market research into a thesis that can be compared, challenged, committed, revisited and defended.**
 
 ## 3. The problem
 
@@ -87,7 +89,7 @@ The result is not a command to buy or sell. It is a transparent decision state w
 | **Challenge** | KillSwitch searches for the strongest evidence-based objection to the provisional thesis. | `CLEAR`, `CAUTION`, `VETO` or `UNKNOWN`. |
 | **Decide** | Deterministic policy returns `LONG`, `SHORT` or `ABSTAIN`. | Decision, score, gates and reason codes. |
 | **Commit** | Evidence snapshot, strategy version, contradictions, invalidation rules and decision are frozen. | Versioned Thesis Receipt. |
-| **Monitor** | The thesis is refreshed against new live evidence. | Current status and freshness. |
+| **Monitor** | Roadmap concept; the current demo refreshes its deterministic fixture and the research API is one bounded request. | Current status and freshness when a future monitoring loop exists. |
 | **Diff** | The system compares the original state with the new state at evidence level. | `THEN → NOW` causal change view. |
 | **Adapt / invalidate** | Predeclared rules determine whether the thesis stays active, weakens, invalidates or closes. | Lifecycle event and rule explanation. |
 | **Social** | Other users submit challenges that must be researched before affecting a future version. | Researched challenge and effect on next version. |
@@ -199,11 +201,11 @@ Krineo compares what the public story says with what market evidence says and la
 
 If the narrative provider fails, narrative becomes `UNKNOWN` and degraded coverage is shown. Missing narrative is never silently converted to neutral.
 
-Narrative Gap is a P1 feature. It must not block the core product if the optional provider is unavailable.
+Narrative Gap remains a P1/roadmap concept. It must not block the core product if an optional provider is unavailable.
 
 ## 12. Social layer
 
-The MVP social mechanic is **Challenge Thesis**.
+The original target social mechanic (roadmap, not shipped) is **Challenge Thesis**.
 
 A user submits a counterclaim. Krineo turns it into a testable claim, researches it and returns:
 
@@ -227,7 +229,7 @@ Practice P&L is secondary context, not proof that the agent is good. The hackath
 
 ## 14. DM-1: Defensible Momentum v1
 
-The MVP ships one transparent practice strategy. **DM-1** looks for short-horizon momentum supported by several evidence dimensions, stronger than alternatives and not invalidated by safety, risk, missing-data, regime or contradiction checks.
+The original MVP target included one transparent practice strategy. The current DM-1 implementation looks for short-horizon momentum supported by several evidence dimensions, stronger than alternatives and not invalidated by safety, risk, missing-data, regime or contradiction checks.
 
 DM-1 is not claimed to be profitable or empirically optimised.
 
@@ -289,7 +291,7 @@ Krineo must fail honestly:
 - Comparison unavailable during autonomous discovery → `ABSTAIN`, because opportunity cost cannot be established.
 - LLM unavailable → preserve structured evidence and deterministic state; degrade explanation and challenge generation.
 - Cached evidence may be used only when clearly labelled stale with its observation time.
-- A research run persists by stage so restart can resume instead of blindly repeating every provider call.
+- The roadmap may add stage persistence later; the current `ResearchRun` is an immutable in-memory result for one bounded request.
 - Database commit failure → do not commit a thesis or open a paper position.
 - Provider failures return typed status, diagnostics and provenance—not fabricated placeholders.
 
@@ -297,20 +299,20 @@ Krineo must fail honestly:
 
 | Screen | Purpose |
 |---|---|
-| **Agent Workspace** | Prompt the agent; show live research stages and high-level market state. |
+| **Agent Workspace** | Inspect a fixture-backed demo decision and, through the API, a bounded LIVE/REPLAY research run. |
 | **Opportunity Comparison** | Show candidate set, rejected alternatives and `ABSTAIN`. |
 | **Provisional Thesis** | Show proposed decision, evidence, contradictions and invalidation conditions before commitment. |
 | **KillSwitch** | Show adversarial challenges and validated effects. |
 | **Thesis Receipt** | Permanent public reasoning artifact with provenance and integrity hash. |
 | **Thesis Dashboard** | Show active, weakened, invalidated and abstained theses; highlight what needs attention. |
 | **Strategy Diff** | Show `THEN` versus `NOW` evidence and causal explanation of decision changes. |
-| **Challenge Thesis** | Turn a human counterclaim into a researched, structured challenge. |
+| **Strategy Preflight** | Evaluate caller-supplied normalized context against an approved Playbook and return `FIT / CAUTION / WAIT / BLOCK`. A human challenge flow remains roadmap. |
 
 ## 18. Hackathon track positioning
 
 ### Track 1 — Autonomous Agents
 
-An accountable autonomous market-reasoning agent that discovers opportunities, compares alternatives, creates evidence-backed practice theses, adversarially challenges itself and revises decisions when precommitted invalidation rules fire.
+A bounded autonomous research run discovers up to three candidates, normalizes provider evidence, evaluates each through DM-1, selects or abstains deterministically, applies the approved Playbook and Preflight, runs KillSwitch, and can optionally record a simulated practice decision and canonical receipt. This is not autonomous real-money trading.
 
 ### Track 2 — Dashboards & Interfaces
 
@@ -318,13 +320,15 @@ A reasoning-first market dashboard that shows what the agent believes, why it be
 
 ### Track 3 — New Skills
 
-A reusable `challenge_thesis` skill: given a proposed thesis and evidence context, return `CLEAR / CAUTION / VETO / UNKNOWN` plus evidence-backed challenges. The final contract remains dependent on the official RYO Builder Guide and must not be invented.
+The shipped skill is `strategy_preflight`: a deterministic, read-only evaluation of caller-supplied normalized market context and an approved Playbook, returning `FIT / CAUTION / WAIT / BLOCK`. `challenge_thesis` is ROADMAP/HISTORICAL and is not a current route.
 
-## 19. MVP scope
+## 19. Original MVP scope and roadmap boundary
 
-### Must ship
+The following is the original target scope. Items listed as shipped elsewhere in this repository are current; persistence, continuous monitoring, real execution, and LLM debate remain roadmap-only.
 
-- Live RYO integration.
+### Original target scope (roadmap; not a claim that every item below is shipped)
+
+- Bounded LIVE/REPLAY RYO integration; current LIVE asset-level availability is externally degraded.
 - Candidate discovery.
 - Opportunity Cost comparison.
 - Structured evidence normalisation.
@@ -333,7 +337,7 @@ A reusable `challenge_thesis` skill: given a proposed thesis and evidence contex
 - KillSwitch.
 - Thesis Receipt.
 - Fixed practice position.
-- Persistent thesis versions.
+- Append-only thesis versions in the deterministic domain/demo path; production persistence remains roadmap-only.
 - Refresh.
 - Strategy Diff.
 - Invalidation.
@@ -342,7 +346,7 @@ A reusable `challenge_thesis` skill: given a proposed thesis and evidence contex
 ### Standout P1
 
 - Narrative Gap.
-- `challenge_thesis` skill.
+- `strategy_preflight` is shipped. The social `challenge_thesis` flow remains roadmap-only.
 - Human Challenge Thesis flow.
 - Receipt hashing.
 - Polished Decision Replay.
@@ -360,7 +364,7 @@ A reusable `challenge_thesis` skill: given a proposed thesis and evidence contex
 ## 20. Demo story
 
 1. Ask Krineo to find the strongest defensible opportunity.
-2. Show live RYO evidence and the candidate comparison.
+2. Show LIVE RYO evidence when available, or explicitly labeled REPLAY evidence, with the candidate comparison.
 3. Show a provisional `LONG`, `SHORT` or disciplined `ABSTAIN` decision.
 4. Run KillSwitch and expose contradictions.
 5. Commit the permanent Thesis Receipt.
@@ -432,6 +436,6 @@ This document consolidates the supplied Krineo product concept from the user-pro
 
 Official hackathon source: [RYO-CHAN Hackathon 2026](https://ryobuild.com/hackathon)
 
-The official page describes a read-only research layer and enumerates these published tool identifiers: `market_overview`, `scan_market`, `analyze_token`, `deep_analysis`, `compare_tokens`, `check_safety` and `supported_tokens`. Its marketing copy uses both “six” and a seven-item enumeration; implementation should follow the official Builder Guide and actual schema rather than relying on the count in promotional copy.
+Historical/public material describes a read-only research layer and may enumerate names not present in the current live MCP discovery. The current discovered set is `market_overview`, `scan_market`, `analyze_token`, `deep_analysis`, `compare_tokens` and `monitor_market_sentiment_shift`. `check_safety` and `supported_tokens` are not current live-discovered tools; implementation follows runtime discovery rather than historical counts.
 
-Exact raw field mappings, request payloads, rate-limit semantics and the final Track 3 contract remain integration dependencies. They must be inspected from the official guide and never fabricated.
+The remaining external dependencies are provider asset-level availability and any official external Track 3 registration requirements. Unobserved RYO output fields remain `UNKNOWN`; they are never fabricated.

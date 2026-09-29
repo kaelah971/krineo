@@ -395,7 +395,7 @@ export function KrineoWorkspace({ scenarios }: { scenarios: readonly DemoScenari
           <div className="hero-copy">
             <div className="hero-kicker"><span className="fixture-dot" /> KRINEO / DEMO WORKSPACE</div>
             <h1 id="workspace-title">The strategy memory <em>for AI trading.</em></h1>
-            <p className="hero-lede">Your trading agent shouldn&apos;t forget its own rules. Krineo keeps the decision, guardrails, receipt and change visible.</p>
+            <p className="hero-lede">Your AI-assisted trading workflow shouldn&apos;t forget its own rules. Krineo keeps the decision, guardrails, receipt and change visible.</p>
             <div className="hero-actions">
               <a className="button button-dark" href="#golden-demo">See what Krineo thinks now <ArrowRight size={15} /></a>
               <a className="text-link" href="#memory-lesson">Review Memory Lesson <ChevronRight size={15} /></a>

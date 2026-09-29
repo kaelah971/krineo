@@ -58,7 +58,7 @@ export function GoldenOverview({
         <div>
           <p className="section-eyebrow">KRINEO / GOLDEN DEMO</p>
           <h2 id="golden-overview-title">The strategy memory and decision guardrail for AI trading.</h2>
-          <p>Your trading agent shouldn&apos;t forget its own rules.</p>
+          <p>Your AI-assisted trading workflow shouldn&apos;t forget its own rules.</p>
         </div>
         <div className="golden-provenance">
           <span className="fixture-dot" />

@@ -277,7 +277,7 @@ It has a functional job. It appears in the hero as a quiet background motif, in 
 | Account/balance hub screen | **Reinterpret.** It becomes the Agent Workspace with research progress and current decision state. |
 | Transaction history screen | **Reinterpret.** It becomes the append-only Thesis Receipt and its evidence record. |
 | Positive balance green | **Reinterpret.** Green means supportive evidence or an eligible action—not a promise of gain. |
-| Payment trust bar | **Replace.** Use a restrained proof strip: `LIVE RYO EVIDENCE · OPPORTUNITY COST · KILLSWITCH · APPEND-ONLY RECEIPTS`. |
+| Payment trust bar | **Replace.** Use a restrained proof strip: `LIVE / REPLAY-LABELED EVIDENCE · OPPORTUNITY COST · KILLSWITCH · APPEND-ONLY RECEIPTS`. |
 
 ### Product rule
 
@@ -683,7 +683,7 @@ The left phone translates the reference’s chart/list role into a decision comp
 
 ### Thesis Receipt phone
 
-The right phone shows the durable proof artifact.
+The right phone shows the append-only proof artifact; do not imply production persistence beyond the current demo/domain boundary.
 
 - Header: `Thesis Receipt` plus version label.
 - Main block: asset, `LONG`, `SHORT` or `ABSTAIN`, Thesis Strength and lifecycle status.
@@ -722,7 +722,7 @@ The right phone shows the durable proof artifact.
 Replace unverifiable “trusted by” logos with product proof:
 
 ```text
-LIVE RYO EVIDENCE · OPPORTUNITY COST · KILLSWITCH · APPEND-ONLY RECEIPTS · STRATEGY DIFF
+LIVE / REPLAY-LABELED EVIDENCE · OPPORTUNITY COST · KILLSWITCH · APPEND-ONLY RECEIPTS · STRATEGY DIFF
 ```
 
 Use muted grayscale or ink text. Never imply customers, certifications or partnerships that do not exist.

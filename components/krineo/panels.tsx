@@ -534,7 +534,7 @@ export function KillSwitchPanel({ scenario }: { scenario: DemoScenario }) {
       className="side-panel"
     >
       <div className="challenge-claim">
-        <span className="challenge-label">MODEL CHALLENGE</span>
+        <span className="challenge-label">DETERMINISTIC CHALLENGE</span>
         <p>“{validation.challengeType === "DIRECTION_CONTRADICTION" ? "Can the directional record contradict the provisional thesis?" : humanize(validation.challengeType)}”</p>
       </div>
       <div className={`verdict-box verdict-${toneFor(verdict)}`}>

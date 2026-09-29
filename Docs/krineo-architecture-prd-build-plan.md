@@ -2,26 +2,29 @@
 name: Krineo
 document: Technical Architecture, Product Requirements and Build Plan
 version: 1.0
-status: Hackathon MVP source of truth
+status: Architecture roadmap plus current implementation map
 category: Accountable AI market reasoning
 hackathon: RYO-CHAN Hackathon 2026
 ---
 
 # Krineo — Architecture, PRD & Build Plan
 
-**Implementation source of truth for the RYO-CHAN Hackathon 2026 product.**  
+**Architecture roadmap and implementation map for the RYO-CHAN Hackathon 2026 product.**
 **Architecture principle: Rules decide. Models explain.**
+
+> **Current implementation note:** The repository now ships a bounded `runResearch()` path with LIVE and REPLAY providers, deterministic DM-1 selection, approved Playbook/Preflight, KillSwitch, optional simulated practice commit and canonical receipt output. The Golden Demo remains fixture-backed. There is no database persistence, real execution, LLM decision engine or production background scheduler in the current build.
 
 ## 1. Delivery objective
 
-Ship a single web application in which real RYO research is converted into structured evidence, passed through the deterministic DM-1 policy, adversarially challenged, committed as a versioned Thesis Receipt, and later refreshed to produce a Strategy Diff and invalidation outcome.
+The target product is a single web application in which RYO research can be converted into structured evidence, passed through deterministic DM-1 policy, challenged, optionally committed as a versioned Thesis Receipt, and later refreshed to produce a Strategy Diff and invalidation outcome.
 
-The smallest complete loop is:
+The current bounded loop is:
 
 ```text
-User intent → durable research run → live RYO evidence
-→ normalised evidence → candidate comparison → DM-1 decision
-→ KillSwitch → Thesis Receipt → refresh → Strategy Diff
+Provider (LIVE or REPLAY) → candidate discovery → normalized evidence
+→ up to three DM-1 evaluations → deterministic selection / ABSTAIN
+→ approved Playbook → Preflight → KillSwitch
+→ optional simulated practice commit → Decision Receipt
 ```
 
 The application must make the full loop inspectable. A static dashboard, a chat wrapper, or a paper-trading screen without evidence provenance is not a complete Krineo submission.
@@ -30,7 +33,7 @@ The application must make the full loop inspectable. A static dashboard, a chat 
 
 ### 2.1 Product definition
 
-Krineo is an accountable AI market-reasoning system. It researches live crypto markets through the RYO read-only research layer, compares candidates and `ABSTAIN`, produces a deterministic `LONG / SHORT / ABSTAIN` decision, lets KillSwitch challenge that decision, and preserves a versioned receipt that explains future changes.
+Krineo is an accountable AI market-reasoning system. It can research crypto markets through the RYO read-only research layer when usable LIVE evidence is available, or through clearly labeled REPLAY, compare candidates and `ABSTAIN`, produce a deterministic `LONG / SHORT / ABSTAIN` decision, let KillSwitch challenge that decision, and preserve a versioned receipt that explains future changes.
 
 ### 2.2 Primary user
 
@@ -39,7 +42,7 @@ A technically curious crypto market participant, researcher, builder or analyst 
 ### 2.3 Secondary users
 
 - Hackathon judges evaluating evidence, reasoning and system quality.
-- Developers inspecting the adapter and reusable `challenge_thesis` skill.
+- Developers inspecting the adapter and reusable `strategy_preflight` skill.
 - Other users who want to challenge or inspect a public Thesis Receipt.
 
 ### 2.4 Jobs to be done
@@ -99,7 +102,7 @@ The application uses one repository and one primary backend/application layer. N
 | **RYO adapter** | MCP/REST calls, raw response persistence, typed failure normalisation and provenance. |
 | **Narrative adapter** | Optional Tavily/news research; never required to manufacture a directional trade. |
 | **AI provider** | Intent parsing, explanation generation and structured challenge proposal only. No hard-rule override. |
-| **Database** | Durable research stages, raw/normalised evidence, candidate sets, thesis versions, receipts, challenges and paper positions. |
+| **Database** | Roadmap-only persistence for research stages, raw/normalised evidence, thesis versions, receipts and practice positions; the current build returns immutable in-memory run results. |
 
 ### 3.1 Data-flow rule
 
@@ -199,17 +202,16 @@ tests/
 
 ## 6. RYO adapter boundary
 
-The rest of the application must never depend directly on RYO raw response shapes. The gateway exposes conceptual methods for:
+The rest of the application must never depend directly on RYO raw response shapes. The current server-side adapter uses only the tools discovered from the live MCP boundary:
 
-- `supported_tokens`
 - `market_overview`
 - `scan_market`
 - `analyze_token`
 - `deep_analysis`
 - `compare_tokens`
-- `check_safety`
+- `monitor_market_sentiment_shift`
 
-Exact arguments and raw response interfaces are populated from the official Builder Guide when available.
+`check_safety` and `supported_tokens` are not currently discovered live tools and are not assumed by the implementation. The adapter validates discovered input schemas and preserves missing output fields as `UNKNOWN` rather than guessing mappings.
 
 ### 6.1 Provenance envelope
 
@@ -238,9 +240,9 @@ export interface ProvenanceEnvelope<T> {
 
 A missing or unavailable value must remain distinguishable from a neutral value.
 
-### 6.2 Published-tool ambiguity
+### 6.2 Published-tool versus live-tool boundary
 
-The official RYO-CHAN page describes a “six read-only research tools” surface while enumerating seven identifiers, including `supported_tokens`. The implementation must follow the official Builder Guide and actual API/MCP schema. Do not create guessed fields to make the count fit.
+Public RYO material may contain historical or inconsistent tool enumerations. The current repository treats authenticated MCP discovery as authoritative. The latest live list contains six tools: `market_overview`, `scan_market`, `analyze_token`, `deep_analysis`, `compare_tokens` and `monitor_market_sentiment_shift`. Public-only names are not presented as live capabilities.
 
 Official source: [RYO-CHAN Hackathon 2026](https://ryobuild.com/hackathon)
 
@@ -258,7 +260,7 @@ If a mapping bug is discovered, the original evidence remains available for repl
 
 | Entity | Purpose |
 |---|---|
-| `ResearchRun` | Durable orchestration state and restart recovery. |
+| `ResearchRun` | Immutable bounded orchestration result; durable persistence and restart recovery remain roadmap work. |
 | `RawToolResult` | Exact sanitised provider response plus provenance. |
 | `EvidenceSnapshot` | One coherent evidence state used for a decision. |
 | `EvidenceItem` | Normalised dimension, stance, source, reason code and observation time. |
@@ -291,35 +293,33 @@ Separate `Thesis` identity from `ThesisVersion`. A refresh never overwrites an o
 
 ## 9. Research state machine
 
+The roadmap state machine is:
+
 ```text
 CREATED → MARKET_CONTEXT → DISCOVERY → COMPARISON
 → DEEP_RESEARCH → NORMALISING → PROVISIONAL → KILLSWITCH
 → COMMITTED / ABSTAINED
 ```
 
-Every completed stage is persisted. A restart resumes from the last durable stage. External stage operations use idempotency keys derived from:
-
-```text
-researchRunId + stage + asset
-```
-
-Completed work must not be blindly repeated.
+Current v1 executes one bounded request and returns an immutable `ResearchRun` result. It does not persist stages, resume after restart, or schedule background work. Those are roadmap concerns, not current product claims.
 
 ## 10. Autonomous research funnel
 
+The shipped Track 1 v1 is deliberately bounded:
+
 | Step | Action |
 |---:|---|
-| 1 | Validate supported token universe. |
-| 2 | Fetch market overview. |
-| 3 | Scan market and shortlist approximately eight candidates. |
-| 4 | Compare approximately four candidates. |
-| 5 | Run token analysis for shortlisted candidates. |
-| 6 | Run deep analysis for approximately two finalists. |
-| 7 | Run required safety checks. |
-| 8 | Normalise evidence and evaluate DM-1. |
-| 9 | Select a winner only if it clears absolute and relative policy; otherwise return `ABSTAIN`. |
+| 1 | Use a LIVE RYO provider or an explicitly labeled REPLAY provider. |
+| 2 | Fetch market context and preserve partial/unavailable status. |
+| 3 | Discover and consider at most three provider candidates. |
+| 4 | Research each candidate through the provider abstraction and normalize observed evidence. |
+| 5 | Run DM-1 for every candidate. |
+| 6 | Use `selectAutonomousCandidate()` for deterministic ranking, relative margin and `ABSTAIN`. |
+| 7 | Apply the supplied approved Playbook through Preflight. |
+| 8 | Run the deterministic KillSwitch before any simulated commitment. |
+| 9 | Optionally create a simulated practice position and canonical Decision Receipt. |
 
-The numbers are orchestration defaults, not a claim that more API calls score better. The RYO judging page explicitly values a visible path from evidence to conclusion over API-call volume.
+No LLM chooses the market decision. Missing provider evidence remains `UNKNOWN`; a degraded LIVE provider produces an honest degraded/abstaining result rather than a fixture fallback.
 
 ## 11. User-directed research
 
@@ -474,22 +474,27 @@ P&L is contextual only.
 
 ## 20. API surface
 
+Current application surfaces:
+
 ```text
-POST /api/research              create durable run and return runId
-GET  /api/research/:id          progress and state
-POST /api/theses/:id/commit     commit provisional thesis
-GET  /api/theses                list thesis identities and current state
-GET  /api/theses/:id            inspect current thesis and versions
-POST /api/theses/:id/refresh    create a new evidence snapshot/version
-GET  /api/theses/:id/diff       return structured Strategy Diff
-POST /api/theses/:id/challenges submit human challenge
-GET  /api/practice              list simulated positions
-GET  /api/system/status         provider and application health
+POST /api/research/run
+GET  /api/skills/
+GET  /api/skills/strategy_preflight
+POST /api/skills/strategy_preflight/invoke
 ```
 
-The browser must never hold a monolithic 45-second request while every provider runs. `POST /api/research` returns immediately. The UI polls or subscribes to the durable research run and renders stage progress.
+Internal deterministic demo surfaces:
+
+```text
+POST /api/demo/commit
+POST /api/demo/refresh
+```
+
+The current research endpoint returns one bounded run result. Durable run polling, thesis CRUD routes, database persistence and background scheduling remain roadmap items. This is not a public trading API.
 
 ## 21. Failure policy
+
+The following is the target failure policy. Current v1 applies it within one bounded in-memory run; database persistence, restart recovery and optional narrative providers are roadmap concerns.
 
 | Failure | Behaviour |
 |---|---|
@@ -497,10 +502,10 @@ The browser must never hold a monolithic 45-second request while every provider 
 | Optional sentiment missing | Continue only if coverage remains `≥80%` and required dimensions exist. |
 | Safety unavailable | `ABSTAIN`. |
 | Comparison unavailable during autonomous discovery | `ABSTAIN`; opportunity cost cannot be established. |
-| AI unavailable | Keep deterministic state; degrade explanation and challenge generation. |
-| Database commit failure | Do not commit thesis or open paper position. |
-| Cached provider result | Show only with explicit stale timestamp and status. |
-| Provider rate limit or timeout | Persist typed failure and diagnostics; never substitute placeholder data. |
+| AI unavailable | No AI provider is required by current v1; keep deterministic state and structured reasons. |
+| Database commit failure | Roadmap persistence must not commit a thesis or open a practice position. |
+| Cached provider result | If a future cache is used, show an explicit stale timestamp and status. |
+| Provider rate limit or timeout | Return typed failure and diagnostics in the run result; never substitute placeholder data. |
 
 ## 22. Frontend requirements
 
@@ -511,7 +516,7 @@ The browser must never hold a monolithic 45-second request while every provider 
 - Permanent Thesis Receipt.
 - Active Thesis Dashboard with `Needs Attention`.
 - Strategy Diff `THEN vs NOW`.
-- Challenge Thesis UI if P1 time allows.
+- `strategy_preflight` developer surface and structured invocation.
 - Evidence freshness and status visible everywhere.
 - Keyboard-reachable flows.
 - Visible focus states.
@@ -522,7 +527,7 @@ The browser must never hold a monolithic 45-second request while every provider 
 
 ## 23. Product acceptance criteria
 
-- A real RYO-backed run can produce structured evidence without fabricated fields.
+- A LIVE RYO run can produce structured evidence when the provider returns usable data; a REPLAY run is labeled and reproducible, and degraded LIVE data never becomes fabricated evidence.
 - The same evidence snapshot plus the same strategy version produces the same deterministic decision.
 - A missing mandatory source can never be interpreted as neutral.
 - `ABSTAIN` is returned for weak direction, high conflict, insufficient coverage, safety failure or unknown, extreme risk or regime mismatch.
@@ -533,7 +538,7 @@ The browser must never hold a monolithic 45-second request while every provider 
 - Strategy Diff identifies exact evidence-state changes and fired invalidation rules.
 - Practice positions are clearly simulated and never call a trading or execution API.
 - Production cannot silently use test fixtures as live data.
-- No real API keys or team tokens are committed; `.env.example` contains names only.
+- No real API keys or team tokens are committed; `.env.example` contains only `RYO_MCP_KEY=` and `RYO_MCP_URL=` names.
 - Stale, partial, rate-limited and unavailable states remain visible.
 
 ## 24. Testing plan
@@ -558,40 +563,36 @@ The browser must never hold a monolithic 45-second request while every provider 
 
 ## 25. Development fixtures and demo integrity
 
-Fixtures are allowed only for tests and development and must be clearly separated from production. Add an environment guard that makes fixture mode unavailable in production.
-
-The demo must label live, stale, partial and unavailable evidence accurately. Placeholder data must never be passed off as real.
+Fixtures are used for deterministic tests and the labeled REPLAY/demo paths. The current UI labels fixture provenance and does not present it as LIVE RYO data. Any future production deployment must keep fixture/replay mode explicit and must not silently substitute it for a degraded LIVE provider.
 
 ## 26. Environment variables
 
-Expected categories:
+Current server-only RYO configuration:
 
 ```text
-RYO_BASE_URL=[set from official guide]
-RYO_AUTH=[set from official guide; server-side only]
-AI_PROVIDER_KEY=[server-side secret]
-TAVILY_API_KEY=[optional server-side secret]
-DATABASE_URL=[managed database connection]
-PUBLIC_APP_URL=[public application URL]
+RYO_MCP_KEY=
+RYO_MCP_URL=
 ```
 
-The exact RYO variable names remain intentionally unspecified until the official contract is supplied. Do not commit real values. Do not place secrets in client bundles, screenshots, logs or the repository.
+Both names are placeholders only. Never create `NEXT_PUBLIC_RYO_MCP_KEY`, expose either value to client components, or place credentials in screenshots, logs or the repository. AI providers, databases and public deployment variables are roadmap/deployment concerns and are not current product dependencies.
 
 ## 27. Build order
 
+This is the historical implementation roadmap. Current v1 is fixture-backed in the UI, has a bounded LIVE/REPLAY research path, and does not include database persistence, restart recovery, background scheduling or real execution.
+
 | Phase | Scope | Exit condition |
 |---|---|---|
-| **P0 Foundation** | App, database, core types, DM-1 config, test runner. | Build passes; tests execute. |
+| **P0 Foundation** | App, core types, DM-1 config, test runner. | Build passes; tests execute. Database persistence remains roadmap-only. |
 | **P1 Decision Engine** | Score, coverage, conflict, gates, relative winner and `ABSTAIN` using fixtures. | All deterministic scenarios pass. |
-| **P2 RYO Adapter** | Official tool wrappers, raw persistence and typed failures. | Required live calls work and persist. |
-| **P3 Normaliser** | Map raw RYO fields into semantic evidence. | One live asset snapshot enters DM-1. |
-| **P4 Orchestrator** | Context, scan, shortlist, compare, deep research, safety and persistence. | Prompt produces an autonomous candidate set. |
-| **P5 Thesis + KillSwitch** | Provisional decision, explanation, structured challenge and validation. | Real-data run produces final `LONG / SHORT / ABSTAIN`. |
-| **P6 Receipt** | Versioning, canonical JSON, hash and practice position. | Permanent receipt reloads from the database. |
-| **P7 Refresh / Diff** | Fresh evidence, v2, diff and invalidation. | Old/new versions survive with causal diff. |
-| **P8 Core UI** | Agent, comparison, KillSwitch, receipt, dashboard and diff. | Complete demo loop is usable. |
+| **P2 RYO Adapter** | Discovered-tool wrappers, sanitization and typed failures. | Authentication/discovery work; current provider health is explicit. |
+| **P3 Normaliser** | Map observed RYO fields into semantic evidence. | Missing/unobserved fields remain `UNKNOWN`; current asset-level availability is externally degraded. |
+| **P4 Orchestrator** | Bounded LIVE/REPLAY context, scan, candidate research, DM-1, selection, Preflight, KillSwitch and optional simulated commit. | `runResearch()` returns an inspectable autonomous research result. |
+| **P5 Thesis + KillSwitch** | Provisional decision, explanation, structured challenge and validation. | Usable LIVE or labeled REPLAY run produces final `LONG / SHORT / ABSTAIN` when gates allow. |
+| **P6 Receipt** | Versioning, canonical JSON, hash and simulated practice position. | Canonical receipt and simulated position are returned; database reload is roadmap-only. |
+| **P7 Refresh / Diff** | Fresh evidence, v2, diff and invalidation. | Deterministic demo preserves old/new versions with causal diff. |
+| **P8 Core UI** | Fixture-backed workspace, comparison, KillSwitch, receipt, dashboard and diff. | Complete deterministic demo loop is usable. |
 | **P9 Narrative** | Optional Tavily integration and degraded behaviour. | Narrative Gap works without becoming required. |
-| **P10 Track 3** | `challenge_thesis` against the official RYO skill specification. | Reusable skill validates independently. |
+| **P10 Track 3** | `strategy_preflight` definition and invocation surface. | Reusable deterministic skill validates independently; official external registration remains subject to the submission contract. |
 | **P11 Social Challenge** | Human challenge flow. | Challenge can research and create a future version. |
 | **P12 Reliability** | Restart, idempotency, accessibility, secrets audit and demo polish. | Submission-ready. |
 
@@ -628,7 +629,7 @@ Do not cut:
 - Refresh.
 - Strategy Diff.
 - Invalidation.
-- Real RYO evidence.
+- Usable LIVE RYO evidence when the provider supplies it, with labeled REPLAY for deterministic demo/test reliability.
 - Failure awareness.
 
 ## 30. RYO-CHAN judging alignment
@@ -654,6 +655,8 @@ The official hackathon page describes a score composed of common criteria plus a
 - Works for everyone — 10 points.
 
 ### Track 3 — New Skills — 60 points
+
+The shipped Krineo skill is `strategy_preflight`: a deterministic, read-only guardrail evaluation over caller-supplied normalized market context and an approved Playbook. Any `challenge_thesis` concept in earlier planning is ROADMAP/HISTORICAL, not the current shipped contract.
 
 - Fills a gap — 25 points.
 - Follows the specification — 15 points.
@@ -697,7 +700,7 @@ Additional integrity rules:
 Krineo is done for the hackathon when:
 
 - A user asks the agent to find or analyse an opportunity.
-- Real RYO evidence is gathered with visible provenance and status.
+- LIVE RYO evidence is gathered with visible provenance and status when available; REPLAY is labeled and degraded evidence is not fabricated.
 - Multiple candidates are compared.
 - The system returns a deterministic `LONG`, `SHORT` or `ABSTAIN`.
 - KillSwitch challenges the provisional thesis.
@@ -712,9 +715,9 @@ Krineo is done for the hackathon when:
 
 ## 33. Remaining external dependency
 
-The major unresolved integration detail is the exact field-level RYO Builder Guide and tool contract. Public material verifies the published research surface, read-only behaviour and failure-provenance expectations, but exact request payloads, response fields, rate-limit semantics and the Track 3 specification must be mapped from the official guide rather than guessed.
+The remaining external dependencies are upstream RYO asset-level availability and any official external Track 3 registration/submission requirements. The current MCP input contract is discovered at runtime and the shipped `strategy_preflight` route is independently validated. Output fields not observed from RYO remain unmapped and therefore `UNKNOWN`.
 
-Once supplied, implementation work should concentrate in `lib/ryo` and the raw-to-normalised evidence mapper. The core Krineo policy should remain stable.
+If provider availability improves, follow-up work should concentrate in `lib/ryo` and the raw-to-normalised evidence mapper. The core Krineo policy should remain stable.
 
 ## 34. Source boundary
 
