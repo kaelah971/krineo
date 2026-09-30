@@ -9,6 +9,7 @@ import {
   FileCheck2,
   ShieldCheck,
 } from "lucide-react";
+import { HeroMarketComposition } from "@/components/krineo/hero-market-composition";
 import { SiteHeader } from "@/components/krineo/site-header";
 
 const features = [
@@ -49,36 +50,7 @@ export default function Home() {
             <div className="hero-proof"><Check size={13} /> Saved in this browser · no live execution</div>
           </div>
 
-          <div className="landing-product-preview" aria-label="Illustrative Krineo product preview">
-            <div className="preview-window-bar">
-              <div className="preview-window-dots"><span /><span /><span /></div>
-              <span>KRINEO / MARKET VIEW</span>
-              <span className="preview-window-state">ILLUSTRATIVE FIXTURE</span>
-            </div>
-            <div className="preview-market-header">
-              <div className="preview-asset-icon">S</div>
-              <div><strong>SOL / USD</strong><span>Deterministic replay</span></div>
-              <span className="status-pill status-replay">REPLAY</span>
-            </div>
-            <div className="preview-chart" aria-hidden="true">
-              <div className="preview-chart-labels"><span>MARKET EVIDENCE</span><span>SNAPSHOT</span></div>
-              <svg viewBox="0 0 520 156" role="presentation">
-                <path className="chart-grid-line" d="M0 32H520M0 78H520M0 124H520" />
-                <path className="chart-line-muted" d="M0 115 C36 110 45 91 78 98 S124 117 153 88 S201 72 229 84 S264 101 292 65 S334 53 358 70 S394 87 424 43 S468 36 520 24" />
-                <path className="chart-line-accent" d="M0 115 C36 110 45 91 78 98 S124 117 153 88 S201 72 229 84 S264 101 292 65 S334 53 358 70 S394 87 424 43 S468 36 520 24" />
-                <circle className="chart-dot" cx="424" cy="43" r="4" />
-              </svg>
-            </div>
-            <div className="preview-decision-float">
-              <div><span>KRINEO DECISION</span><strong>LONG · GUARDRAILS</strong></div>
-              <Activity size={17} />
-            </div>
-            <div className="preview-metrics">
-              <div><span>Preflight</span><strong>FIT</strong></div>
-              <div><span>KillSwitch</span><strong>CLEAR</strong></div>
-              <div><span>Receipt</span><strong>READY</strong></div>
-            </div>
-          </div>
+          <HeroMarketComposition />
         </section>
 
         <section className="landing-story" aria-labelledby="story-title">
