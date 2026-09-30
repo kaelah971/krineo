@@ -376,16 +376,21 @@ export function KrineoWorkspace({ scenarios }: { scenarios: readonly DemoScenari
       <main id="top" className="shell-content">
         <section className="workspace-hero" aria-labelledby="workspace-title">
           <div className="hero-copy">
-            <div className="hero-kicker"><span className="fixture-dot" /> KRINEO / DEMO WORKSPACE</div>
-            <h1 id="workspace-title">The strategy memory <em>for AI trading.</em></h1>
-            <p className="hero-lede">Your AI-assisted trading workflow shouldn&apos;t forget its own rules. Krineo keeps the decision, guardrails, receipt and change visible.</p>
+            <div className="hero-kicker"><span className="fixture-dot" /> GOLDEN DEMO / DETERMINISTIC FIXTURE</div>
+            <h1 id="workspace-title">See Krineo <em>in action.</em></h1>
+            <p className="hero-lede">A deterministic walkthrough of the full decision flow using a preloaded market case. This is a fixed demo fixture, not live trading.</p>
             <div className="hero-actions">
-              <a className="button button-dark" href="#golden-demo">See what Krineo thinks now <ArrowRight size={15} /></a>
-              <a className="text-link" href="#memory-lesson">Review Memory Lesson <ChevronRight size={15} /></a>
+              <a className="button button-dark" href="#golden-demo">Start demo <ArrowRight size={15} /></a>
+              <a className="text-link" href="#evidence">Learn how it works <ChevronRight size={15} /></a>
             </div>
           </div>
-          <div className="hero-instrument" aria-label="Evidence receipt spine">
-            <div className="instrument-header"><span>REASONING SPINE</span><span>v1.0</span></div>
+          <div className="hero-instrument" aria-label="Deterministic result preview">
+            <div className="instrument-header"><span>DETERMINISTIC RESULT</span><span>{scenario.asset} / FIXTURE</span></div>
+            <div className="instrument-preview-grid">
+              <div><span>SELECTED ASSET</span><strong>{scenario.asset}</strong><small>Evidence path</small></div>
+              <div><span>DECISION</span><strong>{scenario.currentDecision.decision}</strong><small>Guardrails applied</small></div>
+            </div>
+            <div className="instrument-chart" aria-hidden="true"><svg viewBox="0 0 420 70"><path d="M0 55 C35 52 46 42 75 47 S116 58 146 39 S193 28 222 37 S263 51 291 26 S340 20 363 29 S390 21 420 12" /></svg></div>
             <div className="instrument-line">
               {reviewSteps.slice(0, 5).map((step, index) => (
                 <div className="instrument-node" key={step.key}>

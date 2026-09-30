@@ -1,68 +1,36 @@
 "use client";
 
-import { useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowRight, CircleHelp, RotateCcw } from "lucide-react";
 import { SiteHeader } from "./site-header";
+import { PersonalResearchPanel } from "./personal-research";
+import { useWorkspaceState } from "./workspace-state";
 import {
-  clearLocalWorkspaceState,
-  createLocalWorkspaceState,
-  LOCAL_WORKSPACE_STORAGE_KEY,
-  readLocalWorkspaceState,
-  saveLocalWorkspaceState,
-  type LocalWorkspaceState,
-} from "@/lib/workspace/local-profile";
+  activePlaybook,
+  createWorkspace,
+  persistWorkspace,
+  resetWorkspace,
+  type WorkspaceState,
+} from "@/lib/workspace/store";
+
+export type PersonalRoute = "workspace" | "playbooks" | "theses" | "receipts" | "practice";
 
 type OnboardingValues = {
   displayName: string;
   workspaceName: string;
 };
 
-let clientWorkspaceSnapshot: LocalWorkspaceState | null = null;
-let hasReadClientWorkspaceSnapshot = false;
-const workspaceSubscribers = new Set<() => void>();
-
-function getClientWorkspaceSnapshot() {
-  if (!hasReadClientWorkspaceSnapshot) {
-    clientWorkspaceSnapshot = readLocalWorkspaceState();
-    hasReadClientWorkspaceSnapshot = true;
-  }
-
-  return clientWorkspaceSnapshot;
-}
-
-function getServerWorkspaceSnapshot() {
-  return undefined;
-}
-
-function subscribeToWorkspaceStorage(onStoreChange: () => void) {
-  if (typeof window === "undefined") return () => undefined;
-
-  function handleStorageChange(event: StorageEvent) {
-    if (event.key !== LOCAL_WORKSPACE_STORAGE_KEY) return;
-    clientWorkspaceSnapshot = readLocalWorkspaceState();
-    hasReadClientWorkspaceSnapshot = true;
-    onStoreChange();
-  }
-
-  workspaceSubscribers.add(onStoreChange);
-  window.addEventListener("storage", handleStorageChange);
-  return () => {
-    workspaceSubscribers.delete(onStoreChange);
-    window.removeEventListener("storage", handleStorageChange);
-  };
-}
-
-function updateClientWorkspaceSnapshot(nextWorkspace: LocalWorkspaceState | null) {
-  clientWorkspaceSnapshot = nextWorkspace;
-  hasReadClientWorkspaceSnapshot = true;
-  workspaceSubscribers.forEach((subscriber) => subscriber());
-}
-
-function PersonalFrame({ children }: { children: ReactNode }) {
+export function PersonalFrame({
+  active = "workspace",
+  children,
+}: {
+  active?: PersonalRoute;
+  children: ReactNode;
+}) {
   return (
     <div className="app-shell personal-shell">
-      <SiteHeader active="workspace" context="workspace" />
+      <SiteHeader active={active} context="workspace" />
       {children}
       <footer className="app-footer personal-footer">
         <span>KRINEO · PERSONAL WORKSPACE</span>
@@ -153,6 +121,51 @@ function Onboarding({
   );
 }
 
+export function WorkspaceGate({
+  active = "workspace",
+  children,
+}: {
+  active?: PersonalRoute;
+  children: ReactNode;
+}) {
+  const workspace = useWorkspaceState();
+  const [storageError, setStorageError] = useState<string | null>(null);
+
+  function handleOnboardingComplete({ displayName, workspaceName }: OnboardingValues) {
+    const nextWorkspace = createWorkspace({
+      displayName,
+      workspaceName,
+      createdAt: new Date().toISOString(),
+    });
+    if (!persistWorkspace(nextWorkspace)) {
+      setStorageError("This browser did not allow local storage. The workspace was not created.");
+      return;
+    }
+    setStorageError(null);
+  }
+
+  if (workspace === undefined) {
+    return (
+      <PersonalFrame active={active}>
+        <main className="personal-shell-content personal-loading" aria-live="polite">
+          <p className="section-eyebrow">LOCAL WORKSPACE</p>
+          <p>Preparing your workspace...</p>
+        </main>
+      </PersonalFrame>
+    );
+  }
+
+  if (workspace === null) {
+    return (
+      <PersonalFrame active={active}>
+        <Onboarding error={storageError} onComplete={handleOnboardingComplete} />
+      </PersonalFrame>
+    );
+  }
+
+  return <PersonalFrame active={active}>{children}</PersonalFrame>;
+}
+
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
     <div className="personal-empty">
@@ -165,156 +178,102 @@ function EmptyState({ title, description }: { title: string; description: string
   );
 }
 
-function WorkspaceDashboard({
-  workspace,
-  onReset,
-}: {
-  workspace: LocalWorkspaceState;
-  onReset: () => void;
-}) {
+function ResearchSummaryRow({ run }: { run: WorkspaceState["researchRuns"][number] }) {
+  const source = run.mode === "REPLAY"
+    ? `REPLAY · ${run.replayFixtureId ?? run.providerSource}`
+    : run.providerSource;
+  return (
+    <li className="research-summary-row">
+      <div>
+        <strong>{run.selectedAsset ?? "No asset selected"}</strong>
+        <span>{source} · {new Date(run.createdAt).toLocaleString()}</span>
+      </div>
+      <div className="research-summary-result">
+        <strong>{run.finalDecision}</strong>
+        <span>{run.status}</span>
+      </div>
+    </li>
+  );
+}
+
+function WorkspaceDashboard() {
+  const workspace = useWorkspaceState();
+  if (workspace === undefined || workspace === null) return null;
+
+  const playbook = activePlaybook(workspace);
   const summary = [
-    ["Playbooks", workspace.playbooks.length, "Personal guardrails"] as const,
-    ["Active theses", workspace.activeTheses.length, "Current market views"] as const,
-    ["Receipts", workspace.receipts.length, "Committed decisions"] as const,
-    ["Practice positions", workspace.practicePositions.length, "Simulated only"] as const,
-    ["Memory lessons awaiting review", workspace.memoryLessonsAwaitingReview.length, "Resolved cases"] as const,
-  ];
-  const greeting = getGreeting();
+    ["Playbooks", workspace.playbooks.length, "Personal guardrails"],
+    ["Active theses", workspace.theses.length, "From real runs"],
+    ["Receipts", workspace.receipts.length, "Canonical artifacts"],
+    ["Practice positions", workspace.practicePositions.length, "Simulation only"],
+    ["Research runs", workspace.researchRuns.length, "Personal history"],
+  ] as const;
+  const recentRuns = workspace.researchRuns.slice(0, 3);
+  const recentTheses = workspace.theses.slice(0, 3);
+  const recentReceipts = workspace.receipts.slice(0, 3);
+  const recentPractice = workspace.practicePositions.slice(0, 3);
 
   return (
     <main className="personal-shell-content dashboard-content">
       <section className="personal-heading" aria-labelledby="personal-title">
         <div>
-          <p className="section-eyebrow">{workspace.workspaceName}</p>
-          <h1 id="personal-title">{greeting}, {workspace.displayName}.</h1>
+          <p className="section-eyebrow">{workspace.profile.workspaceName}</p>
+          <h1 id="personal-title">{getGreeting()}, {workspace.profile.displayName}.</h1>
           <p>Your strategies, decisions and memory stay together here.</p>
         </div>
-        <div className="personal-heading-note">
-          <span className="local-status-dot" />
-          <span>LOCAL WORKSPACE</span>
-        </div>
+        <div className="personal-heading-note"><span className="local-status-dot" /><span>LOCAL WORKSPACE</span></div>
       </section>
 
       <section className="personal-action-strip" aria-label="Workspace actions">
-        <div className="action-strip-heading">
-          <p className="section-eyebrow">START HERE</p>
-          <strong>Choose a next step</strong>
-        </div>
+        <div className="action-strip-heading"><p className="section-eyebrow">START HERE</p><strong>Choose a next step</strong></div>
         <div className="personal-actions">
-          <button className="personal-action" type="button" disabled>
-            <span>Create a Playbook</span>
-            <small>Coming next</small>
-          </button>
-          <button className="personal-action" type="button" disabled>
-            <span>Run Market Research</span>
-            <small>Coming next</small>
-          </button>
-          <Link className="personal-action personal-action-link" href="/demo">
-            <span>Explore Golden Demo</span>
-            <ArrowRight size={15} aria-hidden="true" />
-          </Link>
+          <Link className="personal-action personal-action-link" href="/playbooks#new"><span>Create a Playbook</span><ArrowRight size={15} aria-hidden="true" /></Link>
+          <a className="personal-action personal-action-link" href="#run-research"><span>Run Market Research</span><ArrowRight size={15} aria-hidden="true" /></a>
+          <Link className="personal-action personal-action-link" href="/demo"><span>Explore Golden Demo</span><ArrowRight size={15} aria-hidden="true" /></Link>
         </div>
       </section>
 
       <section className="personal-summary" aria-label="Workspace summary">
-        {summary.map(([label, value, note]) => (
-          <div className="personal-summary-card" key={label}>
-            <span>{label}</span>
-            <strong>{value}</strong>
-            <small>{note}</small>
-          </div>
-        ))}
+        {summary.map(([label, value, note]) => <div className="personal-summary-card" key={label}><span>{label}</span><strong>{value}</strong><small>{note}</small></div>)}
       </section>
 
       <section className="personal-grid" aria-label="Personal workspace areas">
-        <article className="personal-card personal-card-wide research-card" id="ask-krineo">
-          <div className="personal-card-header">
-            <div>
-              <p className="section-eyebrow">ASK KRINEO</p>
-              <h2>Start with a question.</h2>
-            </div>
-            <span className="personal-card-status">NOT CONNECTED</span>
-          </div>
-          <p className="personal-card-description">
-            Personal research wiring arrives in the next product slice. Nothing is sent from this screen yet.
-          </p>
-          <div className="research-composer" aria-describedby="research-composer-note">
-            <label htmlFor="research-question">Research question</label>
-            <div className="research-input-row">
-              <input id="research-question" placeholder="e.g. What changed in my market view?" disabled />
-              <button className="button button-dark" type="button" disabled>Ask Krineo</button>
-            </div>
-            <p id="research-composer-note">This empty composer does not call fixture research or a live market service.</p>
-          </div>
-        </article>
+        <div className="personal-card personal-card-wide research-card" id="run-research"><PersonalResearchPanel /></div>
 
         <article className="personal-card" id="active-playbook">
-          <div className="personal-card-header">
-            <div>
-              <p className="section-eyebrow">PLAYBOOK</p>
-              <h2>Active Playbook</h2>
-            </div>
-            <span className="personal-card-index">01</span>
-          </div>
-          <EmptyState title="No Playbook yet." description="Define how Krineo should evaluate decisions." />
-        </article>
-
-        <article className="personal-card" id="recent-decisions">
-          <div className="personal-card-header">
-            <div>
-              <p className="section-eyebrow">DECISIONS</p>
-              <h2>Recent Decisions</h2>
-            </div>
-            <span className="personal-card-index">02</span>
-          </div>
-          <EmptyState title="No committed decisions yet." description="Your first receipt will appear here after a personal decision flow exists." />
+          <div className="personal-card-header"><div><p className="section-eyebrow">PLAYBOOK</p><h2>Active Playbook</h2></div><span className="personal-card-index">01</span></div>
+          {playbook ? (
+            <div className="active-playbook-detail"><strong>{playbook.displayName}</strong><span>v{playbook.version.versionNumber} · {playbook.version.rules.length} guardrails · HUMAN APPROVED</span><Link className="text-link" href="/playbooks">Manage Playbooks <ArrowRight size={14} /></Link></div>
+          ) : <EmptyState title="No Playbook yet." description="Define how Krineo should evaluate decisions." />}
         </article>
 
         <article className="personal-card" id="memory">
-          <div className="personal-card-header">
-            <div>
-              <p className="section-eyebrow">MEMORY</p>
-              <h2>Memory</h2>
-            </div>
-            <span className="personal-card-index">03</span>
-          </div>
-          <EmptyState title="Krineo has no resolved cases to compare yet." description="Memory lessons will come from your own completed decisions." />
+          <div className="personal-card-header"><div><p className="section-eyebrow">MEMORY</p><h2>Memory</h2></div><span className="personal-card-index">02</span></div>
+          <EmptyState title="No personal lessons yet." description="Personal Memory Lessons will appear as resolved cases accumulate." />
+        </article>
+
+        <article className="personal-card personal-card-wide" id="recent-research">
+          <div className="personal-card-header"><div><p className="section-eyebrow">RESEARCH</p><h2>Recent Research</h2></div><Link className="text-link" href="#run-research">Run again <ArrowRight size={14} /></Link></div>
+          {recentRuns.length > 0 ? <ul className="research-summary-list">{recentRuns.map((run) => <ResearchSummaryRow key={run.id} run={run} />)}</ul> : <EmptyState title="No personal research yet." description="Run an explicit LIVE or deterministic REPLAY research request above." />}
+        </article>
+
+        <article className="personal-card" id="active-theses">
+          <div className="personal-card-header"><div><p className="section-eyebrow">THESES</p><h2>Active Theses</h2></div><Link className="text-link" href="/theses">View all <ArrowRight size={14} /></Link></div>
+          {recentTheses.length > 0 ? <ul className="compact-record-list">{recentTheses.map((thesis) => <li key={thesis.versionId}><strong>{thesis.asset} · {thesis.decision}</strong><span>{thesis.status} · v{thesis.versionId.slice(-8)}</span></li>)}</ul> : <EmptyState title="No personal theses yet." description="Eligible proposals and committed versions will appear here." />}
+        </article>
+
+        <article className="personal-card" id="receipts">
+          <div className="personal-card-header"><div><p className="section-eyebrow">RECEIPTS</p><h2>Receipts</h2></div><Link className="text-link" href="/receipts">View all <ArrowRight size={14} /></Link></div>
+          {recentReceipts.length > 0 ? <ul className="compact-record-list">{recentReceipts.map((receipt) => <li key={receipt.id}><strong>{receipt.asset} · {receipt.decision}</strong><span>{receipt.canonicalHash.slice(0, 18)}…</span></li>)}</ul> : <EmptyState title="No Decision Receipts yet." description="Canonical receipts appear only after an eligible simulated decision is committed." />}
         </article>
 
         <article className="personal-card" id="practice">
-          <div className="personal-card-header">
-            <div>
-              <p className="section-eyebrow">PRACTICE</p>
-              <h2>Practice</h2>
-            </div>
-            <span className="personal-card-index">04</span>
-          </div>
-          <div className="practice-empty-state">
-            <strong>$10,000 simulated portfolio</strong>
-            <p>No open simulated positions.</p>
-            <small>Simulation only · no real-money execution</small>
-          </div>
-        </article>
-
-        <article className="personal-card personal-card-wide" id="receipts">
-          <div className="personal-card-header">
-            <div>
-              <p className="section-eyebrow">RECEIPTS</p>
-              <h2>Decision Receipts</h2>
-            </div>
-            <span className="personal-card-index">05</span>
-          </div>
-          <EmptyState title="No Decision Receipts yet." description="Receipts will preserve the evidence behind your own committed decisions." />
+          <div className="personal-card-header"><div><p className="section-eyebrow">PRACTICE</p><h2>Practice</h2></div><Link className="text-link" href="/practice">View all <ArrowRight size={14} /></Link></div>
+          {recentPractice.length > 0 ? <ul className="compact-record-list">{recentPractice.map(({ position, pnl }) => <li key={position.id}><strong>{position.asset} · {position.direction}</strong><span>{pnl === null ? position.status : `${pnl.pnlUsd >= 0 ? "+" : ""}${pnl.pnlUsd.toFixed(2)} USD`}</span></li>)}</ul> : <div className="practice-empty-state"><strong>$10,000 simulated portfolio</strong><p>No open simulated positions.</p><small>SIMULATION ONLY · NO REAL-MONEY EXECUTION</small></div>}
         </article>
       </section>
 
-      <details className="local-settings">
-        <summary>Workspace settings</summary>
-        <div className="local-settings-panel">
-          <p>Workspace identity is saved in this browser only.</p>
-          <button className="text-button" type="button" onClick={onReset}><RotateCcw size={13} aria-hidden="true" /> Reset local workspace</button>
-        </div>
-      </details>
+      <details className="local-settings"><summary>Workspace settings</summary><div className="local-settings-panel"><p>Workspace identity and personal records are saved in this browser only.</p><button className="text-button" type="button" onClick={resetWorkspace}><RotateCcw size={13} aria-hidden="true" /> Reset local workspace</button></div></details>
     </main>
   );
 }
@@ -327,52 +286,5 @@ function getGreeting() {
 }
 
 export function PersonalWorkspace() {
-  const workspace = useSyncExternalStore(
-    subscribeToWorkspaceStorage,
-    getClientWorkspaceSnapshot,
-    getServerWorkspaceSnapshot,
-  );
-  const [storageError, setStorageError] = useState<string | null>(null);
-
-  function handleOnboardingComplete({ displayName, workspaceName }: OnboardingValues) {
-    const nextWorkspace = createLocalWorkspaceState({ displayName, workspaceName });
-    if (!saveLocalWorkspaceState(nextWorkspace)) {
-      setStorageError("This browser did not allow local storage. The workspace was not created.");
-      return;
-    }
-
-    setStorageError(null);
-    updateClientWorkspaceSnapshot(nextWorkspace);
-  }
-
-  function handleReset() {
-    clearLocalWorkspaceState();
-    setStorageError(null);
-    updateClientWorkspaceSnapshot(null);
-  }
-
-  if (workspace === undefined) {
-    return (
-      <PersonalFrame>
-        <main className="personal-shell-content personal-loading" aria-live="polite">
-          <p className="section-eyebrow">LOCAL WORKSPACE</p>
-          <p>Preparing your workspace...</p>
-        </main>
-      </PersonalFrame>
-    );
-  }
-
-  if (workspace === null) {
-    return (
-      <PersonalFrame>
-        <Onboarding error={storageError} onComplete={handleOnboardingComplete} />
-      </PersonalFrame>
-    );
-  }
-
-  return (
-    <PersonalFrame>
-      <WorkspaceDashboard workspace={workspace} onReset={handleReset} />
-    </PersonalFrame>
-  );
+  return <WorkspaceGate><WorkspaceDashboard /></WorkspaceGate>;
 }
