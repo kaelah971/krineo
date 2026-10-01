@@ -1,10 +1,35 @@
 import { MoreHorizontal } from "lucide-react";
 
-const marketSeries = [
-  151, 148, 150, 146, 143, 145, 141, 139, 142, 138, 135, 137,
-  133, 130, 132, 128, 131, 127, 129, 124, 121, 124, 119, 116,
-  118, 113, 111, 115, 108, 105, 109, 101, 98, 102, 91, 47,
-];
+const candleSeries = [
+  { open: 143.2, high: 144.1, low: 142.6, close: 143.7, volume: 38 },
+  { open: 143.7, high: 144.6, low: 143.1, close: 144.3, volume: 44 },
+  { open: 144.3, high: 145.1, low: 143.6, close: 143.9, volume: 58 },
+  { open: 143.9, high: 144.5, low: 142.9, close: 143.1, volume: 52 },
+  { open: 143.1, high: 143.8, low: 141.8, close: 142.4, volume: 68 },
+  { open: 142.4, high: 143.2, low: 141.7, close: 142.9, volume: 34 },
+  { open: 142.9, high: 143.9, low: 142.4, close: 143.6, volume: 40 },
+  { open: 143.6, high: 144.2, low: 142.8, close: 143.0, volume: 45 },
+  { open: 143.0, high: 143.7, low: 141.8, close: 142.1, volume: 61 },
+  { open: 142.1, high: 143.1, low: 141.6, close: 142.8, volume: 46 },
+  { open: 142.8, high: 143.9, low: 142.2, close: 143.5, volume: 41 },
+  { open: 143.5, high: 144.6, low: 143.0, close: 144.2, volume: 50 },
+  { open: 144.2, high: 144.9, low: 143.1, close: 143.6, volume: 63 },
+  { open: 143.6, high: 144.0, low: 142.7, close: 143.2, volume: 48 },
+  { open: 143.2, high: 144.4, low: 142.8, close: 144.1, volume: 55 },
+  { open: 144.1, high: 145.2, low: 143.6, close: 144.8, volume: 42 },
+  { open: 144.8, high: 145.4, low: 144.0, close: 144.3, volume: 47 },
+  { open: 144.3, high: 145.0, low: 143.5, close: 144.7, volume: 40 },
+  { open: 144.7, high: 145.9, low: 144.2, close: 145.5, volume: 52 },
+  { open: 145.5, high: 146.0, low: 144.7, close: 145.0, volume: 58 },
+  { open: 145.0, high: 146.3, low: 144.8, close: 145.9, volume: 51 },
+  { open: 145.9, high: 146.8, low: 145.2, close: 146.5, volume: 63 },
+  { open: 146.5, high: 147.1, low: 145.8, close: 146.0, volume: 70 },
+  { open: 146.0, high: 146.8, low: 145.3, close: 146.6, volume: 48 },
+  { open: 146.6, high: 147.5, low: 146.1, close: 147.1, volume: 64 },
+  { open: 147.1, high: 147.6, low: 146.3, close: 146.8, volume: 57 },
+  { open: 146.8, high: 147.9, low: 146.4, close: 147.2, volume: 74 },
+  { open: 147.2, high: 148.3, low: 146.7, close: 147.28, volume: 91 },
+] as const;
 
 const bars = [48, 72, 38, 84, 59, 96, 68];
 const watchlist = [
@@ -13,8 +38,21 @@ const watchlist = [
   { asset: "BTC", decision: "SHORT", state: "CAUTION", tone: "negative" },
 ] as const;
 
-function getMarketPoints() {
-  return marketSeries.map((y, index) => `${24 + index * (531 / (marketSeries.length - 1))},${y}`).join(" ");
+const chart = { left: 25, right: 552, top: 18, bottom: 165, volumeTop: 188, volumeBottom: 232 };
+const priceMin = 139;
+const priceMax = 152;
+const candleStep = (chart.right - chart.left) / (candleSeries.length - 1);
+
+function priceY(value: number) {
+  return chart.top + ((priceMax - value) / (priceMax - priceMin)) * (chart.bottom - chart.top);
+}
+
+function candleX(index: number) {
+  return chart.left + index * candleStep;
+}
+
+function volumeHeight(value: number) {
+  return 9 + (value / 100) * 35;
 }
 
 function getSparklinePoints() {
@@ -22,8 +60,9 @@ function getSparklinePoints() {
 }
 
 export function HeroMarketComposition() {
-  const marketPoints = getMarketPoints();
-  const lastPoint = marketPoints.split(" ").at(-1)?.split(",") ?? ["555", "47"];
+  const currentCandle = candleSeries[candleSeries.length - 1];
+  const currentY = priceY(currentCandle.close);
+  const currentX = candleX(candleSeries.length - 1);
 
   return (
     <div className="hero-market-composition" aria-label="Illustrative Krineo market product preview">
@@ -58,25 +97,36 @@ export function HeroMarketComposition() {
         </div>
 
         <div className="hero-chart-block">
-          <div className="hero-chart-heading"><span>MARKET EVIDENCE</span><span>15M · 36 DATA POINTS</span></div>
-          <svg className="hero-market-chart" viewBox="0 0 600 220" role="img" aria-label="Illustrative SOL replay price chart with a late upward move">
+          <div className="hero-chart-heading"><span>MARKET EVIDENCE · 15M</span><span>28 CANDLES · VOLUME</span></div>
+          <svg className="hero-market-chart" viewBox="0 0 600 270" role="img" aria-label="Illustrative SOL replay candlestick chart with volume bars and an upward directional bias">
             <g className="hero-chart-grid">
-              <line x1="24" y1="42" x2="555" y2="42" />
-              <line x1="24" y1="86" x2="555" y2="86" />
-              <line x1="24" y1="130" x2="555" y2="130" />
-              <line x1="24" y1="174" x2="555" y2="174" />
-              <line x1="156" y1="20" x2="156" y2="184" />
-              <line x1="288" y1="20" x2="288" y2="184" />
-              <line x1="420" y1="20" x2="420" y2="184" />
+              {[30, 64, 98, 132, 165].map((y) => <line key={`h-${y}`} x1={chart.left} y1={y} x2={chart.right} y2={y} />)}
+              {[157, 289, 421].map((x) => <line key={`v-${x}`} x1={x} y1={chart.top} x2={x} y2={chart.volumeBottom} />)}
+              <line className="hero-volume-divider" x1={chart.left} y1="180" x2={chart.right} y2="180" />
             </g>
             <g className="hero-chart-axis-labels">
-              <text x="565" y="45">152</text><text x="565" y="89">148</text><text x="565" y="133">144</text><text x="565" y="177">140</text>
-              <text x="24" y="207">09:00</text><text x="190" y="207">12:00</text><text x="356" y="207">15:00</text><text x="500" y="207">18:00</text>
+              <text x="563" y="33">152</text><text x="563" y="67">149</text><text x="563" y="101">146</text><text x="563" y="135">143</text><text x="563" y="168">140</text>
+              <text x="25" y="260">09:00</text><text x="188" y="260">12:00</text><text x="352" y="260">15:00</text><text x="498" y="260">18:00</text>
+              <text className="hero-volume-label" x="25" y="192">VOL</text>
             </g>
-            <polygon className="hero-chart-area" points={`24,184 ${marketPoints} 555,184`} />
-            <polyline className="hero-chart-line" points={marketPoints} />
-            <line className="hero-chart-crosshair" x1={lastPoint[0]} y1="20" x2={lastPoint[0]} y2="184" />
-            <circle className="hero-chart-current" cx={lastPoint[0]} cy={lastPoint[1]} r="4" />
+            <line className="hero-chart-current-line" x1={chart.left} y1={currentY} x2={chart.right} y2={currentY} />
+            {candleSeries.map((candle, index) => {
+              const x = candleX(index);
+              const openY = priceY(candle.open);
+              const closeY = priceY(candle.close);
+              const highY = priceY(candle.high);
+              const lowY = priceY(candle.low);
+              const positive = candle.close >= candle.open;
+              return (
+                <g className={positive ? "hero-candle hero-candle-positive" : "hero-candle hero-candle-negative"} key={`${candle.open}-${index}`}>
+                  <line x1={x} y1={highY} x2={x} y2={lowY} />
+                  <rect x={x - 4} y={Math.min(openY, closeY)} width="8" height={Math.max(2, Math.abs(closeY - openY))} />
+                  <rect className="hero-volume-bar" x={x - 4} y={chart.volumeBottom - volumeHeight(candle.volume)} width="8" height={volumeHeight(candle.volume)} />
+                </g>
+              );
+            })}
+            <circle className="hero-chart-current" cx={currentX} cy={currentY} r="3.5" />
+            <g className="hero-current-label"><rect x="557" y={currentY - 8} width="40" height="16" rx="2" /><text x="561" y={currentY + 3}>147.28</text></g>
           </svg>
         </div>
 

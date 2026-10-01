@@ -40,7 +40,7 @@ export default function Home() {
       <main className="landing-main">
         <section className="landing-hero premium-hero" aria-labelledby="landing-title">
           <div className="landing-hero-copy">
-            <p className="hero-kicker"><span className="hero-kicker-mark" /> AI-ASSISTED MARKET REASONING</p>
+            <p className="hero-kicker">AI-ASSISTED MARKET REASONING</p>
             <h1 id="landing-title">The strategy<br />memory for <span>AI trading.</span></h1>
             <p className="landing-lede">Krineo keeps the decision, guardrails, receipts and change visible.</p>
             <div className="hero-actions">
