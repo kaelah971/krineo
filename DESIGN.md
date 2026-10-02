@@ -474,10 +474,22 @@ reference governs campaign mood, composition and phone-led storytelling.
 - No wallet, brokerage connection, live-money execution or implied live data.
 - Remove decorative status dots from eyebrows, captions, notes and simulation
   labels. Green remains a brand accent and explicitly labeled semantic state.
-- Once-only reveals: cards rise 10px and shift ±4px over 280ms; phones rise
-  6px over 280ms with 40ms delay, and the clip settles 2px once. No pinning
-  or loops. SSR/JS-disabled content
-  stays visible, and reduced motion uses final positions immediately.
+- Hero motion preserves device dimensions and uses front-facing translation,
+  scale and opacity. Portfolio → Research → Receipt advances through center,
+  back-left and back-right slots. Rear opacity is .8 and existing front/rear
+  visual widths are retained. No Y-axis rotation, spinning or orbiting.
+  Text enters first (440ms); phones settle over 650ms after a 160ms delay.
+  Wait 1000ms after settling, then use 2700ms rest, 300ms emphasis (1.035
+  scale / −6px) and 800ms advance. Clear the incoming silhouette before its
+  paint layer is promoted. Pause on desktop hover, pointer/focus interaction,
+  hidden tabs and while offscreen. Recompute responsive slots only on resize.
+- Once-only reveals: cards enter left/right/left from ±36px and 10px below
+  over 650ms at 18% visibility; phones rise 6px with a 40ms delay and clips
+  settle 2px. Fine-pointer hover runs one restrained 380ms wiggle (±.8°,
+  ±2px), settling 2px up; clips remain attached. Touch has no hover effect.
+  No scroll-jacking or card loops. SSR/JS-disabled content stays visible;
+  reduced motion restores the approved static hero and disables all entrances
+  and wiggles immediately. Cancel animation handles/listeners on unmount.
 - Marketing CSS lives in a scoped module; do not retheme shared product tokens.
 - Verify 1440, 1280, 1024, 768 and 390px, plus 320px resilience, keyboard focus,
   reduced motion and 200% zoom. Do not crop defining screen states.

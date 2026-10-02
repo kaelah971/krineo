@@ -4,6 +4,7 @@ import { PhoneFrame } from "./phone-frame";
 import { TradingScreen, screenDescriptions } from "./trading-screen";
 import { StoryScreen, storyScreenDescriptions, type StoryScreenVariant } from "./story-screen";
 import { StoryReveal } from "./story-reveal";
+import { HeroCarousel } from "./hero-carousel";
 import styles from "./landing.module.css";
 
 function MarketingHeader() {
@@ -20,11 +21,11 @@ function OrbitArtwork() {
 
 export function HeroPhoneComposition() {
   return <div className={styles.heroVisual}>
-    <div className={styles.phoneStage} data-hero-phones="true"><OrbitArtwork />
+    <HeroCarousel><OrbitArtwork />
       <PhoneFrame className={styles.heroLeft} label={screenDescriptions.portfolio}><TradingScreen variant="portfolio" /></PhoneFrame>
       <PhoneFrame className={styles.heroRight} label={screenDescriptions.receipt}><TradingScreen variant="receipt" /></PhoneFrame>
       <PhoneFrame className={styles.heroCenter} label={screenDescriptions.research}><TradingScreen variant="research" /></PhoneFrame>
-    </div>
+    </HeroCarousel>
     <p className={styles.visualCaption}>ILLUSTRATIVE SIMULATION <span className={styles.captionDivider}>/</span> NO LIVE EXECUTION</p>
   </div>;
 }

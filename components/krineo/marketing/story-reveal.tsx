@@ -14,30 +14,37 @@ export function StoryReveal({ children }: { children: ReactNode }) {
     const cards = [...root.querySelectorAll<HTMLElement>("[data-story]")];
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
+        if (!entry.isIntersecting || entry.intersectionRatio < .18) return;
         const card = entry.target as HTMLElement;
         card.dataset.reveal = "visible";
         observer.unobserve(card);
       });
-    }, { threshold: 0.15 });
+    }, { threshold: .18 });
+
+    const settled = (event: TransitionEvent) => {
+      const card = event.target as HTMLElement;
+      if (card.matches("[data-story]") && event.propertyName === "transform") card.dataset.motionReady = "true";
+    };
+    root.addEventListener("transitionend", settled);
 
     // SSR and already-visible cards remain visible. Only offscreen cards are armed.
     cards.forEach(card => {
       if (card.getBoundingClientRect().top >= window.innerHeight) {
         card.dataset.reveal = "pending";
         observer.observe(card);
-      }
+      } else card.dataset.motionReady = "true";
     });
     const showAll = () => {
       if (!preference.matches) return;
       observer.disconnect();
-      cards.forEach(card => { card.dataset.reveal = "visible"; });
+      cards.forEach(card => { card.dataset.reveal = "visible"; card.dataset.motionReady = "true"; });
     };
     preference.addEventListener("change", showAll);
     return () => {
       observer.disconnect();
+      root.removeEventListener("transitionend", settled);
       preference.removeEventListener("change", showAll);
-      cards.forEach(card => { delete card.dataset.reveal; });
+      cards.forEach(card => { delete card.dataset.reveal; delete card.dataset.motionReady; });
     };
   }, []);
 
