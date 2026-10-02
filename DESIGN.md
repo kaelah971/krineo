@@ -409,6 +409,79 @@ This pattern belongs in the landing-page subhead, trust/proof strip, receipt exp
 - Support 200% text resizing and user text-spacing overrides.
 - Never use italic for body text or small evidence labels.
 
+## Marketing landing campaign — October 2026
+
+This landing-only direction supersedes the earlier light/blue, centered hero,
+floating-tile and center-only mobile-device prescriptions below. Internal product
+routes retain their existing styling and behavior. The supplied dark trading-site
+reference governs campaign mood, composition and phone-led storytelling.
+
+- Charcoal canvas `#17181B`, page `#191A1C`, phone screen `#0C0E10`.
+- Text `#F4F5F2`, supporting text `#B0B4BA`, vivid green `#76D51F`, hover `#8DE333`.
+- CTA text `#10150B`; semantic caution `#F2B94B`, negative `#FF7070`.
+- Green is selective: primary CTAs, trace highlights, explicit positive/CLEAR/LONG
+  states and low-opacity ambient lighting. Preserve written state labels.
+- Load local Manrope variable for marketing only; keep phone UI in Arial with
+  tabular numerals. No serif accents. H1 64/52/40px (36px at 320px), weight 600,
+  line-height 1.02/1.04/1.06, tracking -0.045em. H2 42/36/30px, weight 600.
+- Story card headings 26px desktop / 22px mobile, weight 700, line-height 1.12,
+  tracking -0.03em; one short supporting sentence at 14px/1.45. Categories
+  use sentence case at 9px/500/1.4, with 8px copy gaps. Story-phone metadata
+  is 10px, required states and simulation labels are at least 12px. Hero
+  typography remains unchanged. Include the Manrope OFL license.
+- Content maximum 1140px; 40px desktop and 20px mobile gutters. Centered hero
+  copy precedes disclosure and a compact trio. Keep all hero device frames full;
+  never clip or fade their bottoms. Center widths 184/172/160/136/124px at
+  1440–1280/1024/768/390/320px, sides 152/144/132/112/104px, rotated ±3°.
+- Exactly three hero iPhones at every breakpoint: center research/decision,
+  left practice portfolio, right receipt. Supporting devices overlap behind the
+  dominant center. Mobile retains a compact trio; larger story devices follow.
+- Three off-white (#F4F3EF) numbered story cards: Rules → Research + Decision
+  → Memory / Receipt / Change. Dark headings #17181B, body #555B60, radius 24px.
+  Small pinned cards max 480px desktop and 460px tablet. Use a 680/640px
+  desktop rail with start/end/start offsets; center at ≤1023px. All cards use
+  an image-first single-column composition, followed by category, title and
+  one short sentence. Desktop padding is 20px; mobile padding is 16px.
+  At mobile widths cap cards at min(72vw, 280px), leaving generous dark-page
+  space on both sides. Do not stretch to 350px. Cards have 20px corners,
+  12px visual/copy gaps and 36px inter-card gaps. Use natural height with no
+  fixed or minimum height: roughly 280–320px where readable. Text growth can
+  exceed that evaluation range. Never add height-filling spacers.
+- A decorative centered 30×12px green clip protrudes 6px above each card:
+  4px radius, restrained shadow and inset highlight. No circular detail, pulse
+  or status meaning. Keep the card overflow visible and the clip aria-hidden.
+- Phone shell radius 36px desktop, 28–32px mobile; shared island, status bar,
+  screen inset, metallic edge and restrained device-only shadow.
+- Marketing screens are static illustrations with accessible text summaries.
+  Tabs and Buy/Sell treatments are nonfunctional and never keyboard controls.
+- Story previews fit the card, with naturally proportioned cropped iPhones:
+  width 140px and a 150px visual including frame/chrome at every breakpoint.
+  These campaign previews show minimal states rather than complete product UI.
+  Each visibly says Simulated. Rules show Your playbook, HUMAN APPROVED,
+  ABSTAIN→WAIT and Safety veto→BLOCK. Research shows SOL/USD, a clean synthetic
+  candlestick chart, LONG and Preflight CAUTION. Memory shows LONG→SHORT,
+  Receipt preserved and PENDING APPROVAL. Required states remain at least
+  12px, with larger 14px headings/directions; do not shrink typography to
+  squeeze in metadata. Accessible descriptions retain simulation boundaries
+  and the separate changed-fixture/lesson-approval meaning.
+- Mobile story copy is concise; repeated story links and notes are omitted.
+  Workspace and Demo CTAs remain in the header, hero and final section.
+- Fixed September 5 fixture: SOL entry $140, mark $145, $1,000 notional;
+  modeled equity $10,035.71, simulated PnL +$35.71. Intermediate chart paths
+  are synthetic, not historical market observations. Label simulation visibly.
+- Receipts remain illustrative fixture records; use “Hash recorded” rather than
+  inventing a canonical hash. Proposed memory rules await human approval.
+- No wallet, brokerage connection, live-money execution or implied live data.
+- Remove decorative status dots from eyebrows, captions, notes and simulation
+  labels. Green remains a brand accent and explicitly labeled semantic state.
+- Once-only reveals: cards rise 10px and shift ±4px over 280ms; phones rise
+  6px over 280ms with 40ms delay, and the clip settles 2px once. No pinning
+  or loops. SSR/JS-disabled content
+  stays visible, and reduced motion uses final positions immediately.
+- Marketing CSS lives in a scoped module; do not retheme shared product tokens.
+- Verify 1440, 1280, 1024, 768 and 390px, plus 320px resilience, keyboard focus,
+  reduced motion and 200% zoom. Do not crop defining screen states.
+
 ## Layout
 
 ### Base grid

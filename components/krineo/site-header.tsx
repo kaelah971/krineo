@@ -1,5 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Menu } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 
 export function SiteHeader({
   active,
@@ -8,19 +11,20 @@ export function SiteHeader({
   active: "home" | "workspace" | "playbooks" | "theses" | "receipts" | "practice" | "demo";
   context?: "marketing" | "workspace" | "demo";
 }) {
-  const primaryLinks = context === "workspace"
+  const [menuOpen, setMenuOpen] = useState(false);
+  const primaryLinks = context === "marketing"
     ? [
+        ["Home", "/", "home"],
+        ["Workspace", "/workspace", "workspace"],
+        ["Demo", "/demo", "demo"],
+      ] as const
+    : [
         ["Home", "/", "home"],
         ["Workspace", "/workspace", "workspace"],
         ["Playbooks", "/playbooks", "playbooks"],
         ["Theses", "/theses", "theses"],
         ["Receipts", "/receipts", "receipts"],
         ["Practice", "/practice", "practice"],
-        ["Demo", "/demo", "demo"],
-      ] as const
-    : [
-        ["Home", "/", "home"],
-        ["Workspace", "/workspace", "workspace"],
         ["Demo", "/demo", "demo"],
       ] as const;
 
@@ -31,8 +35,8 @@ export function SiteHeader({
         <span className="brand-name">KRINEO</span>
         <span className="brand-beta">ALPHA</span>
       </Link>
-      <nav className="topnav" aria-label="Primary navigation">
-        {primaryLinks.map(([label, href, key]) => <Link className={active === key ? "topnav-active" : undefined} href={href} key={key}>{label}</Link>)}
+      <nav id="primary-navigation" className={`topnav ${menuOpen ? "topnav-open" : ""}`} aria-label="Primary navigation">
+        {primaryLinks.map(([label, href, key]) => <Link className={active === key ? "topnav-active" : undefined} href={href} key={key} onClick={() => setMenuOpen(false)}>{label}</Link>)}
       </nav>
       {context === "demo" ? (
         <div className="topbar-meta">
@@ -52,7 +56,16 @@ export function SiteHeader({
           <ChevronDown size={13} aria-hidden="true" />
         </div>
       )}
-      <span className="mobile-menu-icon" aria-hidden="true"><Menu size={19} /></span>
+      <button
+        className="mobile-menu-toggle"
+        type="button"
+        aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+        aria-expanded={menuOpen}
+        aria-controls="primary-navigation"
+        onClick={() => setMenuOpen((open) => !open)}
+      >
+        {menuOpen ? <X size={19} aria-hidden="true" /> : <Menu size={19} aria-hidden="true" />}
+      </button>
     </header>
   );
 }

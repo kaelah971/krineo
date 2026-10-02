@@ -45,8 +45,11 @@ function toneFor(value: string): "positive" | "negative" | "caution" | "info" | 
   if (["CAUTION", "WAIT", "WEAKEN", "ELEVATED", "DEGRADED", "NEUTRAL", "PARTIAL"].includes(value)) {
     return "caution";
   }
-  if (["INFO", "FIT", "ELIGIBLE"].includes(value)) {
+  if (["INFO", "FIT"].includes(value)) {
     return "info";
+  }
+  if (["ELIGIBLE"].includes(value)) {
+    return "positive";
   }
   if (["UNKNOWN", "ABSTAIN", "NOT_TRIGGERED"].includes(value)) {
     return "unknown";
